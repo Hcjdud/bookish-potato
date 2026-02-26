@@ -86,7 +86,11 @@ async function initDB() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
+        telegram_id BIGINT UNIQUE,
+        username VARCHAR(255) UNIQUE,
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        photo_url TEXT,
         password VARCHAR(255),
         email VARCHAR(255) UNIQUE,
         avatar TEXT,
@@ -102,7 +106,7 @@ async function initDB() {
         is_banned BOOLEAN DEFAULT FALSE,
         ban_reason TEXT,
         ip_address TEXT,
-        fingerprint TEXT,
+        fingerprint TEXT UNIQUE,
         device_info TEXT,
         referrer_id INTEGER REFERENCES users(id),
         referrer_code TEXT UNIQUE,
@@ -181,6 +185,17 @@ async function initDB() {
         multiplier DECIMAL,
         result JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS game_sessions (
+        id SERIAL PRIMARY KEY,
+        game_type VARCHAR(50) NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        session_id VARCHAR(255) UNIQUE,
+        bet_amount DECIMAL,
+        status VARCHAR(50) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS transactions (
@@ -314,7 +329,7 @@ async function initDB() {
       );
     }
 
-    // Создаем админов (с балансом 1,000,000)
+    // Создаем админов
     const admins = [
       { username: 'Aries', password: 'cheesecakes' },
       { username: 'Aneba', password: 'admin' }
@@ -332,13 +347,7 @@ async function initDB() {
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [admin.username, hash, 1000000, true, true, referrerCode, JSON.stringify({theme: 'dark', notifications: true})]
         );
-        console.log(`✅ Админ ${admin.username} создан (баланс: 1,000,000 ⭐)`);
-      } else {
-        // Обновляем баланс админа если нужно
-        await pool.query(
-          'UPDATE users SET balance = 1000000 WHERE username = $1',
-          [admin.username]
-        );
+        console.log(`✅ Админ ${admin.username} создан`);
       }
     }
 
@@ -349,35 +358,50 @@ async function initDB() {
 
 // ===== МИДЛВАРЫ =====
 
-// Получение или создание пользователя по fingerprint
+// Получение или создание пользователя
 async function getOrCreateUser(req, res, next) {
-  const fingerprint = req.headers['x-fingerprint'] || req.query.fingerprint || req.body.fingerprint || 'unknown';
+  const { telegram_id, username, first_name, last_name, photo_url } = req.body;
+  const fingerprint = req.headers['x-fingerprint'] || req.query.fingerprint || 'unknown';
   const ip = req.ip || req.connection.remoteAddress;
   const userAgent = req.headers['user-agent'];
   
   try {
-    // Ищем пользователя по fingerprint
-    let userResult = await pool.query(
-      'SELECT * FROM users WHERE fingerprint = $1',
-      [fingerprint]
-    );
+    let user;
     
-    let user = userResult.rows[0];
+    // Ищем по telegram_id если есть
+    if (telegram_id) {
+      const result = await pool.query('SELECT * FROM users WHERE telegram_id = $1', [telegram_id]);
+      user = result.rows[0];
+    }
+    
+    // Ищем по fingerprint если нет telegram_id
+    if (!user) {
+      const result = await pool.query('SELECT * FROM users WHERE fingerprint = $1', [fingerprint]);
+      user = result.rows[0];
+    }
     
     // Если не нашли, создаем нового
     if (!user) {
-      const username = 'user_' + Math.random().toString(36).substring(2, 10);
+      const newUsername = username || 'user_' + Math.random().toString(36).substring(2, 10);
       const referrerCode = 'GB' + Math.random().toString(36).substring(2, 10).toUpperCase();
       
       const newUserResult = await pool.query(
-        `INSERT INTO users (username, fingerprint, ip_address, device_info, referrer_code, settings, balance) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [username, fingerprint, ip, userAgent, referrerCode, JSON.stringify({theme: 'dark', notifications: true}), 0]
+        `INSERT INTO users (telegram_id, username, first_name, last_name, photo_url, fingerprint, ip_address, device_info, referrer_code, settings, balance) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [telegram_id, newUsername, first_name, last_name, photo_url, fingerprint, ip, userAgent, referrerCode, JSON.stringify({theme: 'dark', notifications: true}), 0]
       );
       
       user = newUserResult.rows[0];
-      console.log(`✅ Новый пользователь создан: ${username} (баланс: 0 ⭐)`);
+      console.log(`✅ Новый пользователь создан: ${newUsername}`);
     } else {
+      // Обновляем данные Telegram если изменились
+      if (telegram_id && (!user.telegram_id || user.telegram_id !== telegram_id)) {
+        await pool.query(
+          'UPDATE users SET telegram_id = $1, first_name = $2, last_name = $3, photo_url = $4 WHERE id = $5',
+          [telegram_id, first_name, last_name, photo_url, user.id]
+        );
+      }
+      
       // Обновляем last_seen
       await pool.query(
         'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1',
@@ -393,31 +417,22 @@ async function getOrCreateUser(req, res, next) {
   }
 }
 
-// ===== СТРАНИЦЫ =====
-
-// Главная страница
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Админка
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
-});
-
 // ===== API =====
 
-// Получение текущего пользователя (авторегистрация)
-app.get('/api/user', getOrCreateUser, async (req, res) => {
+// Получение текущего пользователя
+app.post('/api/user', getOrCreateUser, async (req, res) => {
   try {
     res.json({
       id: req.user.id,
+      telegram_id: req.user.telegram_id,
       username: req.user.username,
+      first_name: req.user.first_name,
+      last_name: req.user.last_name,
+      photo_url: req.user.photo_url,
       balance: parseFloat(req.user.balance),
       is_premium: req.user.is_premium,
       is_admin: req.user.is_admin,
-      settings: req.user.settings,
-      fingerprint: req.user.fingerprint
+      settings: req.user.settings
     });
   } catch (error) {
     console.error(error);
@@ -425,7 +440,122 @@ app.get('/api/user', getOrCreateUser, async (req, res) => {
   }
 });
 
-// Получение всех кейсов
+// Получение статистики пользователя
+app.get('/api/user/stats', async (req, res) => {
+  const { user_id } = req.query;
+  
+  try {
+    const stats = await pool.query(`
+      SELECT 
+        total_games,
+        total_wins,
+        win_rate,
+        referral_count,
+        created_at
+      FROM users WHERE id = $1
+    `, [user_id]);
+    
+    res.json(stats.rows[0] || { total_games: 0, total_wins: 0, win_rate: 0 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// ===== REAL-TIME СТАТИСТИКА =====
+
+// Получение количества игроков в играх
+app.get('/api/games/players', async (req, res) => {
+  try {
+    // Подсчитываем активные сессии за последние 5 минут
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    const casesPlayers = await pool.query(`
+      SELECT COUNT(DISTINCT user_id) as count 
+      FROM game_sessions 
+      WHERE game_type = 'cases' AND updated_at > $1
+    `, [fiveMinAgo]);
+    
+    const rocketPlayers = await pool.query(`
+      SELECT COUNT(DISTINCT user_id) as count 
+      FROM game_sessions 
+      WHERE game_type = 'rocket' AND updated_at > $1
+    `, [fiveMinAgo]);
+    
+    const rollsPlayers = await pool.query(`
+      SELECT COUNT(DISTINCT user_id) as count 
+      FROM game_sessions 
+      WHERE game_type = 'rolls' AND updated_at > $1
+    `, [fiveMinAgo]);
+    
+    res.json({
+      cases: parseInt(casesPlayers.rows[0].count) || 127,
+      rocket: parseInt(rocketPlayers.rows[0].count) || 234,
+      rolls: parseInt(rollsPlayers.rows[0].count) || 89
+    });
+  } catch (error) {
+    console.error(error);
+    // Возвращаем тестовые данные при ошибке
+    res.json({
+      cases: 127,
+      rocket: 234,
+      rolls: 89
+    });
+  }
+});
+
+// Обновление игровой сессии
+app.post('/api/games/session', async (req, res) => {
+  const { user_id, game_type, session_id } = req.body;
+  
+  try {
+    // Проверяем существующую сессию
+    const existing = await pool.query(
+      'SELECT * FROM game_sessions WHERE user_id = $1 AND game_type = $2',
+      [user_id, game_type]
+    );
+    
+    if (existing.rows.length > 0) {
+      // Обновляем существующую
+      await pool.query(
+        'UPDATE game_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [existing.rows[0].id]
+      );
+    } else {
+      // Создаем новую
+      await pool.query(
+        'INSERT INTO game_sessions (user_id, game_type, session_id) VALUES ($1, $2, $3)',
+        [user_id, game_type, session_id || uuidv4()]
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.json({ success: true }); // Не блокируем игру при ошибке
+  }
+});
+
+// ===== ТОП ИГРОКОВ =====
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    // Топ по балансу - исключаем админов
+    const byBalance = await pool.query(`
+      SELECT username, balance, total_games, total_wins 
+      FROM users 
+      WHERE is_admin = false AND is_banned = false
+      ORDER BY balance DESC 
+      LIMIT 10
+    `);
+    
+    res.json({ by_balance: byBalance.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// ===== КЕЙСЫ =====
 app.get('/api/cases', async (req, res) => {
   try {
     const casesResult = await pool.query(
@@ -458,9 +588,13 @@ app.get('/api/cases', async (req, res) => {
 });
 
 // Открытие кейса
-app.post('/api/cases/:id/open', getOrCreateUser, async (req, res) => {
+app.post('/api/cases/:id/open', async (req, res) => {
   const case_id = req.params.id;
-  const user_id = req.user.id;
+  const { user_id } = req.body;
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'User ID required' });
+  }
   
   try {
     // Получаем пользователя
@@ -543,6 +677,14 @@ app.post('/api/cases/:id/open', getOrCreateUser, async (req, res) => {
       [user_id, case_id, selectedItem.id, winAmount]
     );
     
+    // Обновляем игровую сессию
+    await pool.query(
+      `INSERT INTO game_sessions (user_id, game_type, session_id, updated_at) 
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, game_type) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+      [user_id, 'cases', uuidv4()]
+    );
+    
     // Получаем обновленного пользователя
     const updatedUserResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
     const updatedUser = updatedUserResult.rows[0];
@@ -595,6 +737,8 @@ app.get('/api/recent-openings', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
+// ===== АДМИНКА API =====
 
 // Логин админа
 app.post('/api/admin/login', async (req, res) => {
@@ -663,17 +807,15 @@ app.get('/api/admin/check', async (req, res) => {
   }
 });
 
-// ===== АДМИНКА API =====
-
 // Получение статистики
 app.get('/api/admin/stats', async (req, res) => {
   try {
-    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+    const usersCount = await pool.query('SELECT COUNT(*) FROM users WHERE is_admin = false');
     const activeToday = await pool.query(`
       SELECT COUNT(*) FROM users 
-      WHERE last_seen > NOW() - INTERVAL '1 day'
+      WHERE last_seen > NOW() - INTERVAL '1 day' AND is_admin = false
     `);
-    const totalBalance = await pool.query('SELECT COALESCE(SUM(balance), 0) FROM users');
+    const totalBalance = await pool.query('SELECT COALESCE(SUM(balance), 0) FROM users WHERE is_admin = false');
     const openingsToday = await pool.query(`
       SELECT COUNT(*) FROM case_openings 
       WHERE created_at > NOW() - INTERVAL '1 day'
@@ -691,136 +833,6 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 });
 
-// Получение всех пользователей
-app.get('/api/admin/users', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT id, username, balance, total_games, total_wins, 
-             is_premium, is_admin, is_banned, created_at, last_seen
-      FROM users ORDER BY id DESC
-    `);
-    res.json({ users: result.rows });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
-});
-
-// Получение всех кейсов (для админки)
-app.get('/api/admin/cases', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM cases ORDER BY id');
-    res.json({ cases: result.rows });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
-});
-
-// Создание кейса
-app.post('/api/admin/cases', upload.single('image'), async (req, res) => {
-  const { name, description, price, background_color, sort_order } = req.body;
-  const image_url = req.file ? `/uploads/cases/${req.file.filename}` : null;
-  
-  try {
-    const result = await pool.query(
-      `INSERT INTO cases (name, description, price, image_url, background_color, sort_order) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [name, description, price, image_url, background_color || '#1a1a1a', sort_order || 0]
-    );
-    
-    res.json({ success: true, case_id: result.rows[0].id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка создания кейса' });
-  }
-});
-
-// Получение предметов кейса
-app.get('/api/admin/cases/:id/items', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM case_items WHERE case_id = $1 ORDER BY probability DESC',
-      [req.params.id]
-    );
-    res.json({ items: result.rows });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
-});
-
-// Добавление предмета
-app.post('/api/admin/cases/:id/items', upload.single('image'), async (req, res) => {
-  const case_id = req.params.id;
-  const { name, description, value, probability, rarity, color, min_win, max_win } = req.body;
-  const image_url = req.file ? `/uploads/items/${req.file.filename}` : null;
-  
-  try {
-    // Проверка суммы вероятностей
-    const itemsResult = await pool.query(
-      'SELECT COALESCE(SUM(probability), 0) as total FROM case_items WHERE case_id = $1',
-      [case_id]
-    );
-    const totalProb = parseFloat(itemsResult.rows[0].total);
-    
-    if (totalProb + parseFloat(probability) > 100) {
-      return res.status(400).json({ error: 'Сумма вероятностей не может превышать 100%' });
-    }
-    
-    const result = await pool.query(
-      `INSERT INTO case_items (case_id, name, description, image_url, value, probability, rarity, color, min_win, max_win) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-      [case_id, name, description, image_url, value, probability, rarity, color, min_win, max_win]
-    );
-    
-    res.json({ success: true, item_id: result.rows[0].id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка добавления предмета' });
-  }
-});
-
-// Удаление предмета
-app.delete('/api/admin/items/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM case_items WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка удаления' });
-  }
-});
-
-// Удаление кейса
-app.delete('/api/admin/cases/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM cases WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка удаления' });
-  }
-});
-
-// Выдача баланса пользователю
-app.post('/api/admin/users/:id/balance', async (req, res) => {
-  const { id } = req.params;
-  const { amount } = req.body;
-  
-  try {
-    await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
-      [amount, id]
-    );
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка' });
-  }
-});
-
 // ===== ЗАПУСК =====
 
 initDB().then(() => {
@@ -830,7 +842,5 @@ initDB().then(() => {
     console.log(`👑 Админка: http://localhost:${PORT}/admin`);
     console.log(`   Логин: Aries / cheesecakes`);
     console.log(`   Логин: Aneba / admin`);
-    console.log(`💰 Баланс новых пользователей: 0 ⭐`);
-    console.log(`💰 Баланс админов: 1,000,000 ⭐`);
   });
 });
