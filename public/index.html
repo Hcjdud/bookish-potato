@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gifts Battle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #0f0f0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .header h1 {
+            color: gold;
+        }
+        
+        .balance {
+            background: #252525;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            color: gold;
+            border: 1px solid #333;
+        }
+        
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .case-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #333;
+        }
+        
+        .case-card:hover {
+            transform: translateY(-5px);
+            border-color: gold;
+        }
+        
+        .case-image {
+            height: 160px;
+            background-size: cover;
+            background-position: center;
+            background-color: #252525;
+        }
+        
+        .case-info {
+            padding: 16px;
+        }
+        
+        .case-info h3 {
+            color: gold;
+            margin-bottom: 8px;
+        }
+        
+        .case-info p {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .case-price {
+            font-size: 20px;
+            font-weight: 600;
+            color: gold;
+        }
+        
+        .recent {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        
+        .recent h2 {
+            color: gold;
+            margin-bottom: 16px;
+        }
+        
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+        
+        .recent-win {
+            color: #4caf50;
+            font-weight: 600;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid gold;
+        }
+        
+        .modal-content h2 {
+            color: gold;
+            margin-bottom: 20px;
+        }
+        
+        .win-amount {
+            font-size: 48px;
+            color: gold;
+            margin: 20px 0;
+        }
+        
+        .close-btn {
+            background: gold;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .admin-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>🎮 Gifts Battle</h1>
+            <div class="balance" id="balance">0 ⭐</div>
+        </div>
+        
+        <div class="cases-grid" id="casesGrid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #888;">
+                Загрузка кейсов...
+            </div>
+        </div>
+        
+        <div class="recent">
+            <h2>🔥 Последние открытия</h2>
+            <div id="recentOpenings"></div>
+        </div>
+    </div>
+    
+    <a href="/admin" class="admin-link" target="_blank">👑 Админка</a>
+    
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2 id="resultTitle">Открытие кейса</h2>
+            <div id="resultItem" style="font-size: 24px;"></div>
+            <div class="win-amount" id="resultAmount">0 ⭐</div>
+            <button class="close-btn" onclick="closeModal()">Ок</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentUser = null;
+        
+        async function init() {
+            await login();
+            await loadCases();
+            await loadRecent();
+        }
+        
+        async function login() {
+            let username = localStorage.getItem('username');
+            if (!username) {
+                username = 'user_' + Math.floor(Math.random() * 10000);
+                localStorage.setItem('username', username);
+            }
+            
+            const response = await fetch('/api/user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username})
+            });
+            
+            currentUser = await response.json();
+            document.getElementById('balance').textContent = currentUser.balance + ' ⭐';
+        }
+        
+        async function loadCases() {
+            const response = await fetch('/api/cases');
+            const data = await response.json();
+            
+            const grid = document.getElementById('casesGrid');
+            if (!data.cases || data.cases.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #888;">Пока нет кейсов</div>';
+                return;
+            }
+            
+            grid.innerHTML = data.cases.map(c => `
+                <div class="case-card" onclick="openCase(${c.id})">
+                    <div class="case-image" style="background-image: url('${c.image_url || ''}')"></div>
+                    <div class="case-info">
+                        <h3>${c.name}</h3>
+                        <p>${c.description || ''}</p>
+                        <div class="case-price">${c.price} ⭐</div>
+                        <div style="color: #888; margin-top: 8px;">📦 ${c.items_count || 0} предметов</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function loadRecent() {
+            const response = await fetch('/api/recent-openings');
+            const data = await response.json();
+            
+            const container = document.getElementById('recentOpenings');
+            if (!data.openings || data.openings.length === 0) {
+                container.innerHTML = '<div style="color: #888;">Пока нет открытий</div>';
+                return;
+            }
+            
+            container.innerHTML = data.openings.map(o => `
+                <div class="recent-item">
+                    <span>${o.username || 'Аноним'}</span>
+                    <span>${o.item_name || 'Предмет'}</span>
+                    <span class="recent-win">+${o.win_amount || 0} ⭐</span>
+                </div>
+            `).join('');
+        }
+        
+        async function openCase(caseId) {
+            if (!currentUser) return;
+            
+            const response = await fetch(`/api/cases/${caseId}/open`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: currentUser.id})
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                alert(error.error || 'Ошибка');
+                return;
+            }
+            
+            const result = await response.json();
+            
+            document.getElementById('resultTitle').textContent = 'Вы выиграли!';
+            document.getElementById('resultItem').textContent = result.item.name;
+            document.getElementById('resultAmount').textContent = '+' + result.win_amount + ' ⭐';
+            document.getElementById('resultModal').classList.add('active');
+            
+            currentUser.balance = result.new_balance;
+            document.getElementById('balance').textContent = result.new_balance + ' ⭐';
+            
+            loadRecent();
+        }
+        
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+        
+        init();
+    </script>
+</body>
+</html>
