@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #0f0f0f;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: gold;
+            margin-bottom: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #888;
+        }
+        
+        .tab.active {
+            background: gold;
+            color: #000;
+            border-color: gold;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: gold;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: #fff;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        
+        .card h3 {
+            color: gold;
+            margin-bottom: 10px;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid gold;
+        }
+        
+        .modal-content h2 {
+            color: gold;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+        }
+        
+        .items-list {
+            margin-top: 20px;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #252525;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #1a1a1a;
+            padding: 12px;
+            text-align: left;
+            color: gold;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👑 Админ-панель Gifts Battle</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('cases')">📦 Кейсы</div>
+            <div class="tab" onclick="switchTab('users')">👥 Пользователи</div>
+        </div>
+        
+        <!-- Секция кейсов -->
+        <div id="casesSection" class="section active">
+            <button class="btn" onclick="openCreateCaseModal()">+ Создать кейс</button>
+            <div id="casesGrid" class="grid"></div>
+        </div>
+        
+        <!-- Секция пользователей -->
+        <div id="usersSection" class="section">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Баланс</th>
+                        <th>Игр</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Модалка создания кейса -->
+    <div id="createCaseModal" class="modal">
+        <div class="modal-content">
+            <h2>Создание кейса</h2>
+            <form id="createCaseForm">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Цена (⭐)</label>
+                    <input type="number" name="price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Изображение</label>
+                    <input type="file" name="image">
+                </div>
+                <button type="submit" class="btn">Создать</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('createCaseModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модалка предметов -->
+    <div id="itemsModal" class="modal">
+        <div class="modal-content">
+            <h2>Предметы кейса</h2>
+            <button class="btn" onclick="openAddItemModal()">+ Добавить предмет</button>
+            <div id="itemsList" class="items-list"></div>
+            <button class="btn btn-danger" onclick="closeModal('itemsModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- Модалка добавления предмета -->
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавление предмета</h2>
+            <form id="addItemForm">
+                <input type="hidden" id="currentCaseId" name="case_id">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Стоимость (⭐)</label>
+                    <input type="number" name="value" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Вероятность (%)</label>
+                    <input type="number" name="probability" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Изображение</label>
+                    <input type="file" name="image">
+                </div>
+                <button type="submit" class="btn">Добавить</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('addItemModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модалка баланса -->
+    <div id="balanceModal" class="modal">
+        <div class="modal-content">
+            <h2>Выдача баланса</h2>
+            <form id="balanceForm">
+                <input type="hidden" id="balanceUserId" name="user_id">
+                <div class="form-group">
+                    <label>Сумма (⭐)</label>
+                    <input type="number" name="amount" step="0.01" required>
+                </div>
+                <button type="submit" class="btn">Выдать</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('balanceModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let currentCaseId = null;
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tab + 'Section').classList.add('active');
+            
+            if (tab === 'cases') loadCases();
+            if (tab === 'users') loadUsers();
+        }
+        
+        // ===== КЕЙСЫ =====
+        async function loadCases() {
+            const res = await fetch('/api/cases');
+            const data = await res.json();
+            
+            const grid = document.getElementById('casesGrid');
+            if (!data.cases || data.cases.length === 0) {
+                grid.innerHTML = '<div style="color: #888;">Нет кейсов</div>';
+                return;
+            }
+            
+            grid.innerHTML = data.cases.map(c => `
+                <div class="card">
+                    <h3>${c.name}</h3>
+                    <p>${c.description || ''}</p>
+                    <p>💰 ${c.price} ⭐</p>
+                    <p>📦 ${c.items_count || 0} предметов</p>
+                    <div class="card-actions">
+                        <button class="btn" onclick="manageItems(${c.id})">📦 Предметы</button>
+                        <button class="btn btn-danger" onclick="deleteCase(${c.id})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('createCaseForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const res = await fetch('/api/cases', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (res.ok) {
+                alert('Кейс создан');
+                closeModal('createCaseModal');
+                loadCases();
+            }
+        };
+        
+        async function deleteCase(id) {
+            if (!confirm('Удалить кейс?')) return;
+            
+            const res = await fetch('/api/cases/' + id, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                alert('Кейс удален');
+                loadCases();
+            }
+        }
+        
+        // ===== ПРЕДМЕТЫ =====
+        async function manageItems(caseId) {
+            currentCaseId = caseId;
+            
+            const res = await fetch(`/api/cases/${caseId}/items`);
+            const data = await res.json();
+            
+            const list = document.getElementById('itemsList');
+            if (!data.items || data.items.length === 0) {
+                list.innerHTML = '<p style="color: #888;">Нет предметов</p>';
+            } else {
+                list.innerHTML = data.items.map(i => `
+                    <div class="item-row">
+                        <div>
+                            <strong>${i.name}</strong><br>
+                            ${i.value} ⭐ | ${i.probability}%
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteItem(${i.id})">🗑️</button>
+                    </div>
+                `).join('');
+            }
+            
+            openModal('itemsModal');
+        }
+        
+        document.getElementById('addItemForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            formData.set('case_id', currentCaseId);
+            
+            const res = await fetch(`/api/cases/${currentCaseId}/items`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (res.ok) {
+                alert('Предмет добавлен');
+                closeModal('addItemModal');
+                manageItems(currentCaseId);
+            } else {
+                const error = await res.json();
+                alert(error.error || 'Ошибка');
+            }
+        };
+        
+        async function deleteItem(id) {
+            if (!confirm('Удалить предмет?')) return;
+            
+            const res = await fetch('/api/items/' + id, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                alert('Предмет удален');
+                manageItems(currentCaseId);
+            }
+        }
+        
+        // ===== ПОЛЬЗОВАТЕЛИ =====
+        async function loadUsers() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.username}</td>
+                    <td>${u.balance} ⭐</td>
+                    <td>${u.total_games || 0}</td>
+                    <td>
+                        <button class="btn" onclick="openBalanceModal(${u.id})">💰 Выдать</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function openBalanceModal(userId) {
+            document.getElementById('balanceUserId').value = userId;
+            openModal('balanceModal');
+        }
+        
+        document.getElementById('balanceForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const userId = formData.get('user_id');
+            const amount = parseFloat(formData.get('amount'));
+            
+            const res = await fetch(`/api/users/${userId}/balance`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({amount})
+            });
+            
+            if (res.ok) {
+                alert('Баланс выдан');
+                closeModal('balanceModal');
+                loadUsers();
+            }
+        };
+        
+        // ===== МОДАЛКИ =====
+        function openCreateCaseModal() {
+            openModal('createCaseModal');
+        }
+        
+        function openAddItemModal() {
+            openModal('addItemModal');
+        }
+        
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        // Загружаем кейсы при старте
+        loadCases();
+    </script>
+</body>
+</html>
