@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gifts Battle • Дуров Ракетка</title>
+    <title>Gifts Battle • Космическая ракетка</title>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Three.js для 3D графики -->
@@ -47,6 +47,7 @@
             --nft-epic: #8b5cf6;
             --nft-legendary: #e5b13b;
             --nft-mythic: #ec4899;
+            --toast-bg: rgba(26, 27, 31, 0.95);
         }
 
         [data-theme="light"] {
@@ -95,8 +96,8 @@
 
         /* Анимации */
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-10px) translateX(-5px); }
         }
 
         @keyframes pulse {
@@ -104,13 +105,13 @@
             50% { transform: scale(1.05); }
         }
 
-        @keyframes slideIn {
+        @keyframes slideUp {
             from {
-                transform: translateX(100%);
+                transform: translateY(100%);
                 opacity: 0;
             }
             to {
-                transform: translateX(0);
+                transform: translateY(0);
                 opacity: 1;
             }
         }
@@ -120,26 +121,15 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes rocketFly {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-200px, -200px) rotate(30deg); }
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px) rotate(-5deg); }
-            75% { transform: translateX(5px) rotate(5deg); }
-        }
-
-        @keyframes fly {
-            0% { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(-300px) rotate(20deg); }
-        }
-
-        @keyframes nftDrop {
-            0% { transform: scale(0) rotate(0deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
-            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-10px, 5px) rotate(-5deg); }
+            75% { transform: translate(10px, -5px) rotate(5deg); }
         }
 
         /* Header */
@@ -147,7 +137,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
+            padding: 16px 20px;
             background: var(--blur-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -163,21 +153,21 @@
             border: 1px solid var(--border);
             color: var(--text-primary);
             cursor: pointer;
-            padding: 10px;
-            border-radius: 16px;
+            padding: 12px;
+            border-radius: 20px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 44px;
-            height: 44px;
-            position: relative;
-            overflow: hidden;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
         }
 
         .menu-btn:hover, .theme-btn:hover {
-            border-color: var(--accent-primary);
-            transform: scale(1.05);
+            background: var(--accent-gradient);
+            color: #000;
+            transform: scale(1.1);
         }
 
         .balance-wrapper {
@@ -185,42 +175,50 @@
             align-items: center;
             gap: 8px;
             background: var(--accent-gradient);
-            padding: 8px 20px;
+            padding: 10px 24px;
             border-radius: 40px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             box-shadow: var(--shadow-accent);
-            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .balance-wrapper:hover {
+            transform: scale(1.05);
         }
 
         .balance-wrapper:active {
-            transform: scale(0.96);
+            transform: scale(0.95);
         }
 
         .balance-icon {
-            font-size: 20px;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            font-size: 22px;
         }
 
         .balance-amount {
             font-weight: 800;
-            font-size: 18px;
+            font-size: 20px;
             color: #000;
-            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.3);
         }
 
-        /* Навигация как на втором скрине */
-        .nav-bar {
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 430px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-around;
-            padding: 12px 16px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 70px;
-            z-index: 90;
+            padding: 12px 16px 24px;
+            background: var(--blur-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            z-index: 100;
+            animation: slideUp 0.5s ease;
         }
 
         .nav-item {
@@ -232,95 +230,117 @@
             font-size: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
+            padding: 8px 12px;
+            border-radius: 20px;
         }
 
         .nav-item.active {
             color: var(--accent-primary);
+            background: rgba(229, 177, 59, 0.1);
         }
 
         .nav-icon {
-            font-size: 20px;
+            font-size: 24px;
         }
 
-        /* 3D Canvas для ракеты */
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* 3D Canvas */
         #rocketCanvas {
             width: 100%;
-            height: 300px;
-            border-radius: 24px;
-            background: radial-gradient(circle at 50% 50%, #1a1f2b, #0a0b0e);
+            height: 350px;
+            border-radius: 32px;
+            background: linear-gradient(135deg, #0a1a2a, #1a2a3a);
             margin-bottom: 20px;
             position: relative;
             overflow: hidden;
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
         }
 
-        /* NFT Дроп */
-        .nft-drop {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 60px;
-            animation: nftDrop 1s ease-out forwards;
-            z-index: 200;
-            pointer-events: none;
-            filter: drop-shadow(0 0 20px gold);
-        }
-
-        .nft-common { color: var(--nft-common); }
-        .nft-rare { color: var(--nft-rare); }
-        .nft-epic { color: var(--nft-epic); }
-        .nft-legendary { color: var(--nft-legendary); }
-        .nft-mythic { color: var(--nft-mythic); }
-
-        /* Статистика ракетки */
-        .rocket-stats {
+        /* Stats Cards */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .stat-card {
-            background: var(--bg-tertiary);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 12px;
+            border-radius: 20px;
+            padding: 16px;
             text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-accent);
         }
 
         .stat-label {
             font-size: 12px;
             color: var(--text-secondary);
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
 
         .stat-value {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 28px;
+            font-weight: 800;
             color: var(--accent-primary);
+            line-height: 1;
         }
 
         .stat-sub {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--text-tertiary);
+            margin-top: 4px;
         }
 
-        /* Таблица игроков PvP */
-        .players-table {
-            background: var(--bg-tertiary);
+        /* Players Table */
+        .players-section {
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
-            max-height: 200px;
-            overflow-y: auto;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title h3 {
+            font-size: 18px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .online-badge {
+            background: var(--success);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .table-header {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr;
-            padding: 8px 0;
+            padding: 12px 0;
             color: var(--text-secondary);
             font-size: 12px;
             border-bottom: 1px solid var(--border);
@@ -329,261 +349,78 @@
         .table-row {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr;
-            padding: 8px 0;
+            padding: 12px 0;
             font-size: 13px;
             border-bottom: 1px solid var(--border-light);
+            transition: all 0.3s ease;
         }
 
-        .table-row:last-child {
-            border-bottom: none;
+        .table-row:hover {
+            background: rgba(229, 177, 59, 0.05);
         }
 
-        .player-name {
+        .player-info {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .player-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
             background: var(--accent-gradient);
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+
+        .player-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 13px;
         }
 
         .player-bet {
             color: var(--accent-primary);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .player-mult {
             color: var(--success);
+            font-weight: 600;
         }
 
-        .player-status {
+        .status-badge {
             font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background: var(--bg-card);
+            padding: 4px 8px;
+            border-radius: 12px;
             display: inline-block;
+            font-weight: 600;
         }
 
         .status-playing {
+            background: rgba(16, 185, 129, 0.1);
             color: var(--success);
         }
 
         .status-waiting {
+            background: rgba(245, 158, 11, 0.1);
             color: var(--warning);
         }
 
-        /* Апгрейды */
-        .upgrades-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 20px;
+        .status-crashed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
         }
 
-        .upgrade-card {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .upgrade-card:hover {
-            border-color: var(--accent-primary);
-            transform: scale(1.02);
-        }
-
-        .upgrade-icon {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-
-        .upgrade-name {
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .upgrade-level {
-            font-size: 10px;
-            color: var(--text-secondary);
-        }
-
-        /* Магазин */
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .shop-item {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .shop-item:hover {
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
-        }
-
-        .shop-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-
-        .shop-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .shop-price {
+        .status-win {
+            background: rgba(229, 177, 59, 0.1);
             color: var(--accent-primary);
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        /* Блок как на втором скрине */
-        .info-block {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .info-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .info-icon {
-            font-size: 32px;
-        }
-
-        .info-text {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .info-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--accent-primary);
-        }
-
-        .info-right {
-            text-align: right;
-        }
-
-        .info-percent {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .info-boost {
-            background: var(--accent-gradient);
-            color: #000;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        /* Соло режим */
-        .solo-badge {
-            background: linear-gradient(135deg, #8b5cf6, #ec4899);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        /* Розыгрыши */
-        .prize-pool {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .prize-title {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .prize-amount {
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--accent-primary);
-            margin-bottom: 8px;
-        }
-
-        .prize-timer {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            padding: 12px 16px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        .tab {
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            border-radius: 30px;
-            transition: all 0.3s ease;
-        }
-
-        .tab.active {
-            background: var(--accent-gradient);
-            color: #000;
-            border-color: transparent;
-            box-shadow: var(--shadow-accent);
-        }
-
-        .tab-content {
-            display: none;
-            padding: 16px;
-        }
-
-        .tab-content.active {
-            display: block;
         }
 
         /* Game Controls */
@@ -591,48 +428,60 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .bet-section {
             margin-bottom: 20px;
         }
 
-        .bet-control {
-            margin-bottom: 16px;
-        }
-
         .bet-label {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .solo-badge {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
         }
 
         .bet-input-group {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .bet-btn {
-            width: 48px;
+            min-width: 48px;
             height: 48px;
             border: 1px solid var(--border);
             background: var(--bg-tertiary);
             color: var(--text-primary);
-            font-size: 24px;
+            font-size: 16px;
             cursor: pointer;
             border-radius: 16px;
             transition: all 0.3s ease;
-            font-weight: 700;
+            font-weight: 600;
+            flex: 1;
         }
 
         .bet-btn:hover {
             background: var(--accent-gradient);
             color: #000;
             border-color: transparent;
+            transform: scale(1.05);
         }
 
         .bet-input {
-            flex: 1;
+            flex: 2;
             height: 48px;
             border: 1px solid var(--border);
             background: var(--bg-tertiary);
@@ -640,43 +489,44 @@
             text-align: center;
             font-size: 18px;
             border-radius: 16px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        .multiplier-slider {
+        .multiplier-section {
             margin-bottom: 20px;
         }
 
-        .multiplier-label {
+        .multiplier-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .multiplier-value {
             color: var(--accent-primary);
             font-weight: 700;
+            font-size: 18px;
         }
 
         input[type=range] {
             width: 100%;
-            height: 6px;
+            height: 8px;
             background: var(--bg-tertiary);
-            border-radius: 3px;
+            border-radius: 4px;
             -webkit-appearance: none;
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             background: var(--accent-gradient);
             border-radius: 50%;
             cursor: pointer;
             box-shadow: var(--shadow-accent);
         }
 
-        .game-buttons {
+        .action-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
@@ -690,6 +540,26 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 150%;
+            height: 150%;
         }
 
         .btn-primary {
@@ -706,6 +576,321 @@
         .btn-danger {
             background: var(--danger);
             color: white;
+        }
+
+        /* Upgrades Grid */
+        .upgrades-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .upgrade-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upgrade-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-accent);
+        }
+
+        .upgrade-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .upgrade-name {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .upgrade-level {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Shop Grid */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .shop-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .shop-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-accent);
+        }
+
+        .shop-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .shop-name {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .shop-price {
+            color: var(--accent-primary);
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        /* Payment Section */
+        .payment-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .payment-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .payment-methods {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .payment-method {
+            flex: 1;
+            text-align: center;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-method.active {
+            border-color: var(--accent-primary);
+            background: var(--accent-gradient);
+            color: #000;
+            transform: scale(1.02);
+        }
+
+        .method-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .method-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .payment-details {
+            display: none;
+        }
+
+        .payment-details.active {
+            display: block;
+        }
+
+        .amount-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .amount-preset {
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .amount-preset:hover {
+            background: var(--accent-gradient);
+            color: #000;
+            transform: scale(1.05);
+        }
+
+        .custom-amount {
+            margin-bottom: 16px;
+        }
+
+        .custom-amount input {
+            width: 100%;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .ton-info {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ton-address {
+            flex: 1;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+
+        .ton-address span {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-gradient);
+            color: #000;
+        }
+
+        .qr-code {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .qr-code img {
+            width: 200px;
+            height: 200px;
+        }
+
+        .transaction-status {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 16px;
+            display: none;
+        }
+
+        .transaction-status.active {
+            display: block;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            overflow: hidden;
+            border: 3px solid var(--accent-primary);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info h2 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            color: var(--text-secondary);
+        }
+
+        .stats-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .admin-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 30px;
+            color: #000;
+            font-weight: 700;
+            margin-top: 20px;
+            cursor: pointer;
         }
 
         /* Modal */
@@ -734,8 +919,7 @@
             border: 1px solid var(--border);
             border-radius: 32px;
             overflow: hidden;
-            animation: slideIn 0.3s ease;
-            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
         }
 
         .modal-header {
@@ -748,11 +932,6 @@
             color: #000;
         }
 
-        .modal-title {
-            font-weight: 800;
-            font-size: 20px;
-        }
-
         .modal-close {
             background: rgba(0, 0, 0, 0.1);
             border: none;
@@ -762,30 +941,16 @@
             width: 40px;
             height: 40px;
             border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close:hover {
-            background: rgba(0, 0, 0, 0.2);
-            transform: rotate(90deg);
         }
 
         .modal-body {
             padding: 24px;
-        }
-
-        /* NFT Modal */
-        .nft-modal {
             text-align: center;
         }
 
         .nft-image {
             font-size: 80px;
             margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
         }
 
         .nft-name {
@@ -795,29 +960,16 @@
         }
 
         .nft-rarity {
-            font-size: 14px;
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 4px 16px;
+            border-radius: 30px;
             display: inline-block;
             margin-bottom: 16px;
-        }
-
-        .rarity-common { background: var(--nft-common); color: #000; }
-        .rarity-rare { background: var(--nft-rare); color: #fff; }
-        .rarity-epic { background: var(--nft-epic); color: #fff; }
-        .rarity-legendary { background: var(--nft-legendary); color: #000; }
-        .rarity-mythic { background: var(--nft-mythic); color: #fff; }
-
-        .nft-value {
-            font-size: 32px;
-            color: var(--accent-primary);
-            font-weight: 800;
         }
 
         /* Toast */
         .toast-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 20px;
             right: 20px;
             z-index: 3000;
@@ -827,13 +979,14 @@
         }
 
         .toast {
-            background: var(--bg-secondary);
+            background: var(--toast-bg);
+            backdrop-filter: blur(8px);
             border-left: 4px solid var(--accent-primary);
             color: var(--text-primary);
             padding: 16px 20px;
             border-radius: 16px;
             box-shadow: var(--shadow-lg);
-            animation: slideIn 0.3s ease;
+            animation: slideUp 0.3s ease;
             font-weight: 500;
             border: 1px solid var(--border);
         }
@@ -841,106 +994,51 @@
         .toast.success { border-left-color: var(--success); }
         .toast.error { border-left-color: var(--danger); }
         .toast.warning { border-left-color: var(--warning); }
-        .toast.nft { 
-            border-left-color: var(--accent-primary);
-            background: linear-gradient(135deg, var(--bg-secondary), #2a1f0a);
-        }
     </style>
 </head>
 <body>
     <div class="app">
         <!-- Header -->
         <div class="header">
-            <div class="header-left">
-                <button class="menu-btn" onclick="toggleMenu()">☰</button>
-            </div>
-            <div class="balance-wrapper" onclick="showDeposit()">
+            <button class="menu-btn" onclick="toggleMenu()">☰</button>
+            <div class="balance-wrapper" onclick="showDepositModal()">
                 <span class="balance-icon">⭐</span>
-                <span class="balance-amount" id="balance">1500</span>
+                <span class="balance-amount" id="balance">0</span>
             </div>
-            <div class="header-right">
-                <button class="theme-btn" onclick="toggleTheme()">🌓</button>
-            </div>
+            <button class="theme-btn" onclick="toggleTheme()">🌓</button>
         </div>
 
-        <!-- Навигация как на втором скрине -->
-        <div class="nav-bar">
-            <div class="nav-item active" onclick="switchMainNav('solo')">
-                <span class="nav-icon">🎮</span>
-                <span>Соло</span>
-            </div>
-            <div class="nav-item" onclick="switchMainNav('pvp')">
-                <span class="nav-icon">⚔️</span>
-                <span>PvP</span>
-            </div>
-            <div class="nav-item" onclick="switchMainNav('cases')">
-                <span class="nav-icon">📦</span>
-                <span>Кейсы</span>
-            </div>
-            <div class="nav-item" onclick="switchMainNav('upgrades')">
-                <span class="nav-icon">⚡</span>
-                <span>Апгрейды</span>
-            </div>
-            <div class="nav-item" onclick="switchMainNav('shop')">
-                <span class="nav-icon">🛒</span>
-                <span>Магазин</span>
-            </div>
-            <div class="nav-item" onclick="switchMainNav('profile')">
-                <span class="nav-icon">👤</span>
-                <span>Профиль</span>
-            </div>
-        </div>
-
-        <!-- Инфо блок как на скрине -->
-        <div class="info-block">
-            <div class="info-left">
-                <div class="info-icon">🎰</div>
-                <div>
-                    <div class="info-text">Призовой пул</div>
-                    <div class="info-value">+16 TON</div>
-                </div>
-            </div>
-            <div class="info-right">
-                <div class="info-percent">0.00%</div>
-                <div class="info-boost">boost</div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('rocket')">🚀 Ракетка</button>
-            <button class="tab" onclick="switchTab('cases')">📦 Кейсы</button>
-            <button class="tab" onclick="switchTab('rolls')">🎲 Rolls</button>
-            <button class="tab" onclick="switchTab('dice')">🎯 Dice</button>
-        </div>
-
-        <!-- Основной контент - Rocket Tab -->
-        <div id="rocketTab" class="tab-content active">
-            <!-- 3D Canvas с Дуровым в ракете -->
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- 3D Canvas -->
             <div id="rocketCanvas"></div>
 
-            <!-- NFT Дроп (появляется при выигрыше) -->
+            <!-- NFT Drop Container -->
             <div id="nftDropContainer" style="position: relative;"></div>
 
-            <!-- Статистика ракетки -->
-            <div class="rocket-stats">
+            <!-- Stats -->
+            <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Текущий множитель</div>
+                    <div class="stat-label">Множитель</div>
                     <div class="stat-value" id="currentMultiplier">1.00x</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Игроков онлайн</div>
+                    <div class="stat-label">Игроков</div>
                     <div class="stat-value" id="onlinePlayers">156</div>
-                    <div class="stat-sub">в игре</div>
+                    <div class="stat-sub">онлайн</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Макс. множитель</div>
-                    <div class="stat-value">10.00x</div>
+                    <div class="stat-label">Джекпот</div>
+                    <div class="stat-value">10.0x</div>
                 </div>
             </div>
 
-            <!-- Таблица игроков PvP -->
-            <div class="players-table" id="playersTable">
+            <!-- Players Table -->
+            <div class="players-section">
+                <div class="section-title">
+                    <h3>Активные игроки</h3>
+                    <span class="online-badge" id="onlineCount">156 online</span>
+                </div>
                 <div class="table-header">
                     <div>Игрок</div>
                     <div>Ставка</div>
@@ -950,33 +1048,9 @@
                 <div id="playersList"></div>
             </div>
 
-            <!-- Апгрейды -->
-            <div class="upgrades-grid">
-                <div class="upgrade-card" onclick="buyUpgrade('speed')">
-                    <div class="upgrade-icon">⚡</div>
-                    <div class="upgrade-name">Скорость</div>
-                    <div class="upgrade-level">lvl 3</div>
-                </div>
-                <div class="upgrade-card" onclick="buyUpgrade('luck')">
-                    <div class="upgrade-icon">🍀</div>
-                    <div class="upgrade-name">Удача</div>
-                    <div class="upgrade-level">lvl 2</div>
-                </div>
-                <div class="upgrade-card" onclick="buyUpgrade('multiplier')">
-                    <div class="upgrade-icon">📈</div>
-                    <div class="upgrade-name">Множитель</div>
-                    <div class="upgrade-level">lvl 1</div>
-                </div>
-                <div class="upgrade-card" onclick="buyUpgrade('nft')">
-                    <div class="upgrade-icon">🎨</div>
-                    <div class="upgrade-name">NFT шанс</div>
-                    <div class="upgrade-level">lvl 2</div>
-                </div>
-            </div>
-
-            <!-- Управление игрой -->
+            <!-- Game Controls -->
             <div class="game-controls">
-                <div class="bet-control">
+                <div class="bet-section">
                     <div class="bet-label">
                         <span>💰 Ставка</span>
                         <span class="solo-badge">SOLO</span>
@@ -990,22 +1064,46 @@
                     </div>
                 </div>
 
-                <div class="multiplier-slider">
-                    <div class="multiplier-label">
+                <div class="multiplier-section">
+                    <div class="multiplier-header">
                         <span>⚡ Автовывод</span>
                         <span class="multiplier-value" id="autoCashoutValue">1.75x</span>
                     </div>
                     <input type="range" id="autoCashout" min="1.1" max="10" step="0.05" value="1.75">
                 </div>
 
-                <div class="game-buttons">
-                    <button class="btn btn-primary" id="startBtn" onclick="startGame()">🚀 ЗАПУСК</button>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="startBtn" onclick="startGame()">🚀 СТАРТ</button>
                     <button class="btn btn-success" id="cashoutBtn" style="display: none;" onclick="cashout()">💰 ЗАБРАТЬ</button>
                     <button class="btn btn-danger" id="stopBtn" style="display: none;" onclick="stopGame()">⏹️ СТОП</button>
                 </div>
             </div>
 
-            <!-- Магазин -->
+            <!-- Upgrades -->
+            <div class="upgrades-grid">
+                <div class="upgrade-card" onclick="buyUpgrade('speed')">
+                    <div class="upgrade-icon">⚡</div>
+                    <div class="upgrade-name">Скорость</div>
+                    <div class="upgrade-level" id="speedLevel">lvl 3</div>
+                </div>
+                <div class="upgrade-card" onclick="buyUpgrade('luck')">
+                    <div class="upgrade-icon">🍀</div>
+                    <div class="upgrade-name">Удача</div>
+                    <div class="upgrade-level" id="luckLevel">lvl 2</div>
+                </div>
+                <div class="upgrade-card" onclick="buyUpgrade('multiplier')">
+                    <div class="upgrade-icon">📈</div>
+                    <div class="upgrade-name">Множитель</div>
+                    <div class="upgrade-level" id="multiplierLevel">lvl 1</div>
+                </div>
+                <div class="upgrade-card" onclick="buyUpgrade('nft')">
+                    <div class="upgrade-icon">🎨</div>
+                    <div class="upgrade-name">NFT шанс</div>
+                    <div class="upgrade-level" id="nftLevel">lvl 2</div>
+                </div>
+            </div>
+
+            <!-- Shop -->
             <div class="shop-grid">
                 <div class="shop-item" onclick="buyItem('rocket_skin')">
                     <div class="shop-icon">🚀</div>
@@ -1022,18 +1120,100 @@
                     <div class="shop-name">Boost x3</div>
                     <div class="shop-price">200 ⭐</div>
                 </div>
-                <div class="shop-item" onclick="buyItem('premium_pass')">
+                <div class="shop-item" onclick="buyItem('premium')">
                     <div class="shop-icon">👑</div>
-                    <div class="shop-name">Premium Pass</div>
+                    <div class="shop-name">Premium</div>
                     <div class="shop-price">1000 ⭐</div>
                 </div>
             </div>
 
-            <!-- Розыгрыши -->
-            <div class="prize-pool">
-                <div class="prize-title">🎁 Текущий розыгрыш</div>
-                <div class="prize-amount" id="prizePool">1500 ⭐</div>
-                <div class="prize-timer" id="prizeTimer">Осталось: 15:32</div>
+            <!-- Payment Section -->
+            <div class="payment-section">
+                <div class="payment-title">💳 Пополнить баланс</div>
+                <div class="payment-methods">
+                    <div class="payment-method active" onclick="selectPaymentMethod('stars')">
+                        <span class="method-icon">⭐</span>
+                        <span class="method-name">Stars</span>
+                    </div>
+                    <div class="payment-method" onclick="selectPaymentMethod('ton')">
+                        <span class="method-icon">💎</span>
+                        <span class="method-name">TON</span>
+                    </div>
+                    <div class="payment-method" onclick="selectPaymentMethod('nft')">
+                        <span class="method-icon">🎨</span>
+                        <span class="method-name">NFT</span>
+                    </div>
+                </div>
+
+                <!-- Stars Payment -->
+                <div id="starsPayment" class="payment-details active">
+                    <div class="amount-presets">
+                        <div class="amount-preset" onclick="setStarsAmount(50)">50 ⭐</div>
+                        <div class="amount-preset" onclick="setStarsAmount(100)">100 ⭐</div>
+                        <div class="amount-preset" onclick="setStarsAmount(500)">500 ⭐</div>
+                        <div class="amount-preset" onclick="setStarsAmount(1000)">1000 ⭐</div>
+                    </div>
+                    <div class="custom-amount">
+                        <input type="number" id="starsAmount" placeholder="Сумма в ⭐" value="50" min="1">
+                    </div>
+                    <button class="btn btn-primary btn-large" onclick="payWithStars()" style="width: 100%;">⭐ Оплатить Stars</button>
+                    <div class="transaction-status" id="starsStatus"></div>
+                </div>
+
+                <!-- TON Payment -->
+                <div id="tonPayment" class="payment-details">
+                    <div class="ton-info">
+                        <div class="ton-icon">💎</div>
+                        <div class="ton-address" id="tonAddress">UQCpU74nU-1MoECyq1IH24WA3677rgWtsVtJKEGVUGnVyawR</div>
+                        <button class="copy-btn" onclick="copyTonAddress()">Копировать</button>
+                    </div>
+                    <div class="qr-code" id="tonQrCode"></div>
+                    <div class="amount-presets">
+                        <div class="amount-preset" onclick="setTonAmount(10)">10 ⭐</div>
+                        <div class="amount-preset" onclick="setTonAmount(50)">50 ⭐</div>
+                        <div class="amount-preset" onclick="setTonAmount(100)">100 ⭐</div>
+                        <div class="amount-preset" onclick="setTonAmount(500)">500 ⭐</div>
+                    </div>
+                    <div class="custom-amount">
+                        <input type="number" id="tonAmount" placeholder="Сумма в ⭐" value="50" min="1">
+                    </div>
+                    <div style="text-align: center; margin-bottom: 16px; color: var(--accent-primary);" id="tonConvert">≈ 0.5 TON</div>
+                    <button class="btn btn-primary" onclick="payWithTON()" style="width: 100%;">💎 Я оплатил</button>
+                    <div class="transaction-status" id="tonStatus"></div>
+                </div>
+
+                <!-- NFT Payment (в разработке) -->
+                <div id="nftPayment" class="payment-details">
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🎨</div>
+                        <h3>NFT оплата в разработке</h3>
+                        <p style="color: var(--text-secondary); margin-top: 12px;">Скоро вы сможете оплачивать NFT</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('rocket')">
+                <span class="nav-icon">🚀</span>
+                <span>Ракетка</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('cases')">
+                <span class="nav-icon">📦</span>
+                <span>Кейсы</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('upgrades')">
+                <span class="nav-icon">⚡</span>
+                <span>Апгрейды</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('shop')">
+                <span class="nav-icon">🛒</span>
+                <span>Магазин</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('profile')">
+                <span class="nav-icon">👤</span>
+                <span>Профиль</span>
             </div>
         </div>
 
@@ -1044,12 +1224,12 @@
                     <div class="modal-title">🎨 NFT ДРОП!</div>
                     <button class="modal-close" onclick="closeModal('nftModal')">✕</button>
                 </div>
-                <div class="modal-body nft-modal">
+                <div class="modal-body">
                     <div class="nft-image" id="nftImage">🎨</div>
-                    <div class="nft-name" id="nftName">Киберпанк Дуров</div>
+                    <div class="nft-name" id="nftName">Космический заяц</div>
                     <div class="nft-rarity" id="nftRarity">legendary</div>
                     <div class="nft-value" id="nftValue">500 ⭐</div>
-                    <button class="btn btn-primary" onclick="claimNFT()" style="margin-top: 20px;">ЗАБРАТЬ</button>
+                    <button class="btn btn-primary" onclick="claimNFT()" style="margin-top: 20px; width: 100%;">ЗАБРАТЬ</button>
                 </div>
             </div>
         </div>
@@ -1060,30 +1240,138 @@
     <script>
         // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
         let currentTheme = localStorage.getItem('theme') || 'dark';
-        let currentUser = {
-            id: 123456,
-            username: 'Дуров',
-            balance: 1500,
-            upgrades: {
-                speed: 3,
-                luck: 2,
-                multiplier: 1,
-                nft: 2
-            }
-        };
-        let rocketScene, rocketCamera, rocketRenderer, rocket, durov;
-        let isPlaying = false;
+        let currentUser = null;
         let currentMultiplier = 1.0;
+        let isPlaying = false;
         let currentBet = 100;
         let rocketInterval;
-        let players = [
-            { name: 'Дуров', bet: 500, multiplier: 1.75, status: 'playing', avatar: 'D' },
-            { name: 'CryptoKing', bet: 1000, multiplier: 2.30, status: 'playing', avatar: 'C' },
-            { name: 'LuckyOne', bet: 250, multiplier: 1.20, status: 'crashed', avatar: 'L' },
-            { name: 'You', bet: 100, multiplier: 1.00, status: 'waiting', avatar: 'Y' }
-        ];
+        let rocketScene, rocketCamera, rocketRenderer, rocket, rabbit;
+        let realPlayers = [];
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
 
-        // ===== 3D СЦЕНА С ДУРОВЫМ =====
+        // TON кошелек из базы данных
+        const TON_ADDRESS = 'UQCpU74nU-1MoECyq1IH24WA3677rgWtsVtJKEGVUGnVyawR';
+
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            // Получаем данные пользователя из Telegram
+            initTelegramUser();
+            
+            // Инициализируем 3D сцену
+            initRocket3D();
+            
+            // Загружаем реальных игроков
+            loadRealPlayers();
+            
+            // Генерируем QR код для TON
+            generateTONQR();
+            
+            // Запускаем обновление онлайн статистики
+            startOnlineSimulation();
+        });
+
+        // ===== TELEGRAM ПОЛЬЗОВАТЕЛЬ =====
+        function initTelegramUser() {
+            const user = tg.initDataUnsafe?.user;
+            
+            if (user) {
+                currentUser = {
+                    id: user.id,
+                    username: user.username || user.first_name,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    photo_url: user.photo_url,
+                    balance: 1000 // Временный баланс
+                };
+                
+                // Обновляем UI
+                document.getElementById('balance').textContent = currentUser.balance;
+                
+                // Добавляем пользователя в список игроков
+                realPlayers.push({
+                    id: user.id,
+                    name: user.first_name,
+                    username: user.username,
+                    photo_url: user.photo_url,
+                    bet: 100,
+                    multiplier: 1.0,
+                    status: 'waiting'
+                });
+            } else {
+                // Тестовый пользователь если не в Telegram
+                currentUser = {
+                    id: Math.floor(Math.random() * 1000000),
+                    username: 'TestUser',
+                    first_name: 'Тест',
+                    balance: 1000
+                };
+                
+                document.getElementById('balance').textContent = currentUser.balance;
+                
+                realPlayers.push({
+                    id: currentUser.id,
+                    name: currentUser.first_name,
+                    username: currentUser.username,
+                    photo_url: null,
+                    bet: 100,
+                    multiplier: 1.0,
+                    status: 'waiting'
+                });
+            }
+            
+            updatePlayersTable();
+        }
+
+        // ===== ЗАГРУЗКА РЕАЛЬНЫХ ИГРОКОВ =====
+        async function loadRealPlayers() {
+            try {
+                // В реальном проекте здесь будет запрос к серверу
+                // Сейчас имитируем несколько реальных игроков
+                const mockPlayers = [
+                    { id: 123, name: 'Дуров', username: 'durov', photo_url: null, bet: 500, multiplier: 1.75, status: 'playing' },
+                    { id: 456, name: 'Павел', username: 'pavel', photo_url: null, bet: 1000, multiplier: 2.3, status: 'playing' },
+                    { id: 789, name: 'Николай', username: 'nikolai', photo_url: null, bet: 250, multiplier: 1.2, status: 'crashed' }
+                ];
+                
+                realPlayers = [...realPlayers, ...mockPlayers];
+                updatePlayersTable();
+                updateOnlineCount();
+            } catch (error) {
+                console.error('Ошибка загрузки игроков:', error);
+            }
+        }
+
+        // ===== ОБНОВЛЕНИЕ ТАБЛИЦЫ ИГРОКОВ =====
+        function updatePlayersTable() {
+            const list = document.getElementById('playersList');
+            if (!list) return;
+            
+            list.innerHTML = realPlayers.map(p => `
+                <div class="table-row">
+                    <div class="player-info">
+                        <div class="player-avatar">
+                            ${p.photo_url ? `<img src="${p.photo_url}" alt="">` : '👤'}
+                        </div>
+                        <span class="player-name">${p.name || p.username || 'Игрок'}</span>
+                    </div>
+                    <div class="player-bet">${p.bet} ⭐</div>
+                    <div class="player-mult">${p.multiplier.toFixed(2)}x</div>
+                    <div><span class="status-badge status-${p.status}">${p.status}</span></div>
+                </div>
+            `).join('');
+        }
+
+        function updateOnlineCount() {
+            const playing = realPlayers.filter(p => p.status === 'playing').length;
+            document.getElementById('onlinePlayers').textContent = playing + realPlayers.length;
+            document.getElementById('onlineCount').textContent = playing + realPlayers.length + ' online';
+        }
+
+        // ===== 3D СЦЕНА С ЗАЙЦЕМ =====
         function initRocket3D() {
             const canvas = document.getElementById('rocketCanvas');
             
@@ -1093,177 +1381,160 @@
             
             // Камера
             rocketCamera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-            rocketCamera.position.set(0, 2, 8);
+            rocketCamera.position.set(5, 3, 8);
+            rocketCamera.lookAt(0, 2, 0);
             
             // Рендерер
             rocketRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             rocketRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
             rocketRenderer.shadowMap.enabled = true;
-            rocketRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
             canvas.appendChild(rocketRenderer.domElement);
             
             // Свет
-            const ambientLight = new THREE.AmbientLight(0x404040);
+            const ambientLight = new THREE.AmbientLight(0x404060);
             rocketScene.add(ambientLight);
             
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
             directionalLight.position.set(5, 10, 7);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 1024;
-            directionalLight.shadow.mapSize.height = 1024;
             rocketScene.add(directionalLight);
             
-            const backLight = new THREE.PointLight(0xe5b13b, 0.5);
-            backLight.position.set(0, 2, -5);
-            rocketScene.add(backLight);
+            // Звезды
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsCount = 500;
+            const starsPositions = new Float32Array(starsCount * 3);
+            
+            for (let i = 0; i < starsCount * 3; i += 3) {
+                starsPositions[i] = (Math.random() - 0.5) * 100;
+                starsPositions[i+1] = (Math.random() - 0.5) * 50;
+                starsPositions[i+2] = (Math.random() - 0.5) * 100 - 20;
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+            const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            rocketScene.add(stars);
             
             // Создаем ракету
             const rocketGroup = new THREE.Group();
             
-            // Корпус ракеты
-            const bodyGeometry = new THREE.ConeGeometry(1, 3, 32);
-            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xe5b13b, emissive: 0x442200 });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            // Корпус
+            const bodyGeo = new THREE.ConeGeometry(1, 3, 32);
+            const bodyMat = new THREE.MeshPhongMaterial({ color: 0xe5b13b, emissive: 0x442200 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 1.5;
             body.castShadow = true;
-            body.receiveShadow = true;
             rocketGroup.add(body);
             
-            // Нос ракеты
-            const noseGeometry = new THREE.ConeGeometry(0.6, 1, 32);
-            const noseMaterial = new THREE.MeshPhongMaterial({ color: 0xff8c00 });
-            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+            // Нос
+            const noseGeo = new THREE.ConeGeometry(0.6, 1, 32);
+            const noseMat = new THREE.MeshPhongMaterial({ color: 0xff8c00 });
+            const nose = new THREE.Mesh(noseGeo, noseMat);
             nose.position.y = 3;
             nose.castShadow = true;
-            nose.receiveShadow = true;
             rocketGroup.add(nose);
             
-            // Стабилизаторы
-            const finGeometry = new THREE.BoxGeometry(0.2, 0.5, 1.5);
-            const finMaterial = new THREE.MeshPhongMaterial({ color: 0xff8c00 });
+            // Крылья
+            const wingGeo = new THREE.BoxGeometry(0.2, 0.5, 1.5);
+            const wingMat = new THREE.MeshPhongMaterial({ color: 0xff8c00 });
             
-            const finLeft = new THREE.Mesh(finGeometry, finMaterial);
-            finLeft.position.set(-1, 1, 0);
-            finLeft.rotation.z = 0.2;
-            finLeft.castShadow = true;
-            rocketGroup.add(finLeft);
+            const wingLeft = new THREE.Mesh(wingGeo, wingMat);
+            wingLeft.position.set(-1, 1, 0);
+            wingLeft.rotation.z = 0.2;
+            rocketGroup.add(wingLeft);
             
-            const finRight = new THREE.Mesh(finGeometry, finMaterial);
-            finRight.position.set(1, 1, 0);
-            finRight.rotation.z = -0.2;
-            finRight.castShadow = true;
-            rocketGroup.add(finRight);
+            const wingRight = new THREE.Mesh(wingGeo, wingMat);
+            wingRight.position.set(1, 1, 0);
+            wingRight.rotation.z = -0.2;
+            rocketGroup.add(wingRight);
             
-            // Огонь из ракеты
-            const fireGroup = new THREE.Group();
+            // Огонь
+            const fireGeo = new THREE.ConeGeometry(0.5, 1, 16);
+            const fireMat = new THREE.MeshPhongMaterial({ color: 0xff4500, emissive: 0xaa2200 });
+            const fire = new THREE.Mesh(fireGeo, fireMat);
+            fire.position.y = -0.5;
+            fire.rotation.x = Math.PI;
+            rocketGroup.add(fire);
             
-            const fire1Geometry = new THREE.ConeGeometry(0.4, 1, 16);
-            const fire1Material = new THREE.MeshPhongMaterial({ color: 0xff4500, emissive: 0xaa2200 });
-            const fire1 = new THREE.Mesh(fire1Geometry, fire1Material);
-            fire1.position.y = -0.5;
-            fire1.rotation.x = Math.PI;
-            fire1.castShadow = true;
-            fireGroup.add(fire1);
+            // Создаем зайца
+            const rabbitGroup = new THREE.Group();
             
-            const fire2Geometry = new THREE.ConeGeometry(0.3, 0.8, 16);
-            const fire2Material = new THREE.MeshPhongMaterial({ color: 0xffaa00, emissive: 0x885500 });
-            const fire2 = new THREE.Mesh(fire2Geometry, fire2Material);
-            fire2.position.y = -1;
-            fire2.rotation.x = Math.PI;
-            fire2.castShadow = true;
-            fireGroup.add(fire2);
-            
-            rocketGroup.add(fireGroup);
-            
-            // Создаем Дурова (голова)
-            const durovGroup = new THREE.Group();
+            // Тело
+            const bodyRabbitGeo = new THREE.SphereGeometry(0.4, 32);
+            const bodyRabbitMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+            const bodyRabbit = new THREE.Mesh(bodyRabbitGeo, bodyRabbitMat);
+            bodyRabbit.position.y = 0.2;
+            rabbitGroup.add(bodyRabbit);
             
             // Голова
-            const headGeometry = new THREE.SphereGeometry(0.4, 32);
-            const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffdd99 });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.y = 0.2;
-            head.castShadow = true;
-            durovGroup.add(head);
+            const headRabbitGeo = new THREE.SphereGeometry(0.25, 32);
+            const headRabbitMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+            const headRabbit = new THREE.Mesh(headRabbitGeo, headRabbitMat);
+            headRabbit.position.y = 0.6;
+            headRabbit.position.z = 0.2;
+            rabbitGroup.add(headRabbit);
             
-            // Глаза
-            const eyeGeometry = new THREE.SphereGeometry(0.08, 16);
-            const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            // Уши
+            const earGeo = new THREE.ConeGeometry(0.1, 0.5, 16);
+            const earMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
             
-            const eyeLeft = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            eyeLeft.position.set(-0.15, 0.25, 0.35);
-            durovGroup.add(eyeLeft);
-            
-            const eyeRight = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            eyeRight.position.set(0.15, 0.25, 0.35);
-            durovGroup.add(eyeRight);
-            
-            // Уши (как у зайца, но для Дурова)
-            const earGeometry = new THREE.ConeGeometry(0.15, 0.6, 16);
-            const earMaterial = new THREE.MeshPhongMaterial({ color: 0xffdd99 });
-            
-            const earLeft = new THREE.Mesh(earGeometry, earMaterial);
-            earLeft.position.set(-0.2, 0.5, 0);
+            const earLeft = new THREE.Mesh(earGeo, earMat);
+            earLeft.position.set(-0.15, 0.9, 0.2);
             earLeft.rotation.z = -0.2;
             earLeft.rotation.x = 0.1;
-            durovGroup.add(earLeft);
+            rabbitGroup.add(earLeft);
             
-            const earRight = new THREE.Mesh(earGeometry, earMaterial);
-            earRight.position.set(0.2, 0.5, 0);
+            const earRight = new THREE.Mesh(earGeo, earMat);
+            earRight.position.set(0.15, 0.9, 0.2);
             earRight.rotation.z = 0.2;
             earRight.rotation.x = 0.1;
-            durovGroup.add(earRight);
+            rabbitGroup.add(earRight);
             
-            // Помещаем Дурова в ракету
-            durovGroup.position.set(0, 1.8, 0.3);
-            durovGroup.scale.set(0.8, 0.8, 0.8);
-            rocketGroup.add(durovGroup);
+            // Глаза
+            const eyeGeo = new THREE.SphereGeometry(0.05, 16);
+            const eyeMat = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            
+            const eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeLeft.position.set(-0.1, 0.65, 0.4);
+            rabbitGroup.add(eyeLeft);
+            
+            const eyeRight = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeRight.position.set(0.1, 0.65, 0.4);
+            rabbitGroup.add(eyeRight);
+            
+            // Нос
+            const noseRabbitGeo = new THREE.SphereGeometry(0.03, 16);
+            const noseRabbitMat = new THREE.MeshPhongMaterial({ color: 0xff69b4 });
+            const noseRabbit = new THREE.Mesh(noseRabbitGeo, noseRabbitMat);
+            noseRabbit.position.set(0, 0.55, 0.45);
+            rabbitGroup.add(noseRabbit);
+            
+            // Помещаем зайца в ракету
+            rabbitGroup.position.set(0, 1.8, 0.3);
+            rabbitGroup.scale.set(0.7, 0.7, 0.7);
+            rocketGroup.add(rabbitGroup);
             
             rocket = rocketGroup;
+            rocket.position.set(0, 1, 0);
             rocketScene.add(rocket);
-            
-            // Звезды на фоне
-            const starsGeometry = new THREE.BufferGeometry();
-            const starsCount = 200;
-            const starsPositions = new Float32Array(starsCount * 3);
-            
-            for (let i = 0; i < starsCount * 3; i += 3) {
-                starsPositions[i] = (Math.random() - 0.5) * 50;
-                starsPositions[i+1] = (Math.random() - 0.5) * 30;
-                starsPositions[i+2] = (Math.random() - 0.5) * 50 - 20;
-            }
-            
-            starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
-            const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
-            const stars = new THREE.Points(starsGeometry, starsMaterial);
-            rocketScene.add(stars);
-            
-            // Облака
-            const cloudGeometry = new THREE.SphereGeometry(0.5, 8);
-            const cloudMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, transparent: true, opacity: 0.3 });
-            
-            for (let i = 0; i < 5; i++) {
-                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-                cloud.position.set((Math.random() - 0.5) * 5, Math.random() * 3, -5);
-                cloud.scale.set(1.5, 0.5, 0.5);
-                rocketScene.add(cloud);
-            }
             
             // Анимация
             function animate() {
                 requestAnimationFrame(animate);
                 
-                // Вращаем ракету если игра активна
                 if (isPlaying) {
-                    rocket.rotation.z = Math.sin(Date.now() * 0.01) * 0.05;
-                    rocket.position.y += 0.01 * currentMultiplier;
-                    
-                    // Качаем головой Дурова
-                    if (durovGroup) {
-                        durovGroup.rotation.y = Math.sin(Date.now() * 0.02) * 0.1;
-                        durovGroup.position.y = 1.8 + Math.sin(Date.now() * 0.03) * 0.05;
+                    // Заяц качает головой
+                    if (rabbitGroup) {
+                        rabbitGroup.rotation.y = Math.sin(Date.now() * 0.01) * 0.1;
+                        rabbitGroup.position.y = 1.8 + Math.sin(Date.now() * 0.02) * 0.1;
                     }
+                    
+                    // Ракета летит влево-вверх
+                    rocket.position.x -= 0.02 * currentMultiplier;
+                    rocket.position.y += 0.015 * currentMultiplier;
+                    rocket.rotation.z = Math.sin(Date.now() * 0.01) * 0.05;
                 } else {
+                    // Покачивание на месте
                     rocket.rotation.z = Math.sin(Date.now() * 0.005) * 0.02;
                 }
                 
@@ -1272,7 +1543,7 @@
             
             animate();
             
-            // Обработка ресайза
+            // Resize handler
             window.addEventListener('resize', () => {
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -1282,40 +1553,7 @@
             });
         }
 
-        // ===== ИНИЦИАЛИЗАЦИЯ =====
-        document.addEventListener('DOMContentLoaded', () => {
-            document.documentElement.setAttribute('data-theme', currentTheme);
-            initRocket3D();
-            updatePlayersTable();
-            startPlayersSimulation();
-            startTimer();
-            
-            // Загружаем баланс
-            document.getElementById('balance').textContent = currentUser.balance;
-        });
-
-        // ===== ТЕМА =====
-        function toggleTheme() {
-            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', currentTheme);
-            localStorage.setItem('theme', currentTheme);
-        }
-
-        // ===== НАВИГАЦИЯ =====
-        function switchMainNav(section) {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
-            showToast(`Раздел ${section} в разработке`, 'info');
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(tab + 'Tab').classList.add('active');
-        }
-
-        // ===== РАКЕТКА =====
+        // ===== ИГРОВЫЕ ФУНКЦИИ =====
         function adjustBet(delta) {
             const input = document.getElementById('betAmount');
             let val = parseInt(input.value) + delta;
@@ -1347,8 +1585,8 @@
             document.getElementById('cashoutBtn').style.display = 'block';
             document.getElementById('stopBtn').style.display = 'block';
             
-            // Обновляем игрока в таблице
-            updatePlayerStatus('You', bet, 1.0, 'playing');
+            // Обновляем статус игрока
+            updatePlayerStatus(currentUser.id, bet, 1.0, 'playing');
             
             rocketInterval = setInterval(() => {
                 currentMultiplier += 0.01;
@@ -1360,7 +1598,7 @@
                 }
                 
                 // Шанс дропа NFT
-                if (Math.random() < 0.001 * currentUser.upgrades.nft) {
+                if (Math.random() < 0.001) {
                     dropNFT();
                 }
                 
@@ -1385,7 +1623,7 @@
             document.getElementById('cashoutBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             
-            updatePlayerStatus('You', currentBet, currentMultiplier, 'win');
+            updatePlayerStatus(currentUser.id, currentBet, currentMultiplier, 'win');
             
             showToast(`Вы выиграли ${win} ⭐!`, 'success');
         }
@@ -1400,7 +1638,7 @@
             document.getElementById('cashoutBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             
-            updatePlayerStatus('You', currentBet, currentMultiplier, 'crashed');
+            updatePlayerStatus(currentUser.id, currentBet, currentMultiplier, 'crashed');
             
             showToast('Ракета взорвалась!', 'error');
             
@@ -1417,28 +1655,49 @@
             }
         }
 
+        function updatePlayerStatus(userId, bet, multiplier, status) {
+            const player = realPlayers.find(p => p.id === userId);
+            if (player) {
+                player.bet = bet;
+                player.multiplier = multiplier;
+                player.status = status;
+            }
+            updatePlayersTable();
+            updateOnlineCount();
+        }
+
         // ===== NFT ДРОП =====
         function dropNFT() {
             const nfts = [
-                { name: 'Киберпанк Дуров', rarity: 'legendary', value: 500, icon: '👾', color: 'var(--nft-legendary)' },
-                { name: 'Золотой заяц', rarity: 'mythic', value: 1000, icon: '🐇', color: 'var(--nft-mythic)' },
-                { name: 'TON Ракета', rarity: 'epic', value: 300, icon: '🚀', color: 'var(--nft-epic)' },
-                { name: 'Хрустальный шар', rarity: 'rare', value: 150, icon: '🔮', color: 'var(--nft-rare)' },
-                { name: 'Обычный ящик', rarity: 'common', value: 50, icon: '📦', color: 'var(--nft-common)' }
+                { name: 'Космический заяц', rarity: 'legendary', value: 500, icon: '🐇', color: 'legendary' },
+                { name: 'Золотая ракета', rarity: 'mythic', value: 1000, icon: '🚀', color: 'mythic' },
+                { name: 'Алмазная звезда', rarity: 'epic', value: 300, icon: '💎', color: 'epic' },
+                { name: 'Лунный камень', rarity: 'rare', value: 150, icon: '🌙', color: 'rare' },
+                { name: 'Космическая пыль', rarity: 'common', value: 50, icon: '✨', color: 'common' }
             ];
             
             const nft = nfts[Math.floor(Math.random() * nfts.length)];
             
-            // Показываем анимацию дропа
+            // Анимация дропа
             const container = document.getElementById('nftDropContainer');
             const drop = document.createElement('div');
             drop.className = `nft-drop nft-${nft.rarity}`;
             drop.textContent = nft.icon;
+            drop.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 80px;
+                animation: nftDrop 1s ease-out forwards;
+                z-index: 200;
+                filter: drop-shadow(0 0 20px gold);
+            `;
             container.appendChild(drop);
             
             setTimeout(() => drop.remove(), 1000);
             
-            // Показываем модалку с NFT
+            // Показываем модалку
             document.getElementById('nftImage').textContent = nft.icon;
             document.getElementById('nftName').textContent = nft.name;
             document.getElementById('nftRarity').textContent = nft.rarity;
@@ -1447,8 +1706,7 @@
             
             openModal('nftModal');
             
-            // Специальное уведомление
-            showToast(`🎨 NFT ДРОП! ${nft.name}`, 'nft');
+            showToast(`🎨 NFT ДРОП! ${nft.name}`, 'success');
         }
 
         function claimNFT() {
@@ -1459,77 +1717,120 @@
             showToast(`+${value} ⭐ получено!`, 'success');
         }
 
-        // ===== ТАБЛИЦА ИГРОКОВ =====
-        function updatePlayersTable() {
-            const list = document.getElementById('playersList');
-            list.innerHTML = players.map(p => `
-                <div class="table-row">
-                    <div class="player-name">
-                        <div class="player-avatar">${p.avatar}</div>
-                        ${p.name}
-                    </div>
-                    <div class="player-bet">${p.bet} ⭐</div>
-                    <div class="player-mult">${p.multiplier.toFixed(2)}x</div>
-                    <div><span class="player-status status-${p.status}">${p.status}</span></div>
-                </div>
-            `).join('');
-        }
-
-        function updatePlayerStatus(name, bet, multiplier, status) {
-            const player = players.find(p => p.name === name);
-            if (player) {
-                player.bet = bet;
-                player.multiplier = multiplier;
-                player.status = status;
-            }
-            updatePlayersTable();
-        }
-
-        // Симуляция игроков онлайн
-        function startPlayersSimulation() {
-            setInterval(() => {
-                const online = document.getElementById('onlinePlayers');
-                let val = parseInt(online.textContent);
-                val += Math.floor(Math.random() * 10) - 3;
-                if (val < 100) val = 100;
-                if (val > 300) val = 300;
-                online.textContent = val;
-                
-                // Добавляем случайного игрока
-                if (Math.random() > 0.7) {
-                    const names = ['CryptoKing', 'LuckyOne', 'MoonWalker', 'StarDust', 'RocketMan'];
-                    const newPlayer = {
-                        name: names[Math.floor(Math.random() * names.length)],
-                        bet: Math.floor(Math.random() * 1000) + 100,
-                        multiplier: 1.0 + Math.random() * 2,
-                        status: ['playing', 'waiting'][Math.floor(Math.random() * 2)],
-                        avatar: '👤'
-                    };
-                    players.unshift(newPlayer);
-                    if (players.length > 8) players.pop();
-                    updatePlayersTable();
-                }
-            }, 3000);
-        }
-
-        // Таймер розыгрыша
-        function startTimer() {
-            let minutes = 15;
-            let seconds = 32;
+        // ===== ОПЛАТА =====
+        function selectPaymentMethod(method) {
+            document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
+            event.target.closest('.payment-method').classList.add('active');
             
-            setInterval(() => {
-                seconds--;
-                if (seconds < 0) {
-                    seconds = 59;
-                    minutes--;
+            document.querySelectorAll('.payment-details').forEach(d => d.classList.remove('active'));
+            document.getElementById(method + 'Payment').classList.add('active');
+        }
+
+        function setStarsAmount(amount) {
+            document.getElementById('starsAmount').value = amount;
+        }
+
+        function setTonAmount(amount) {
+            document.getElementById('tonAmount').value = amount;
+            updateTonConvert();
+        }
+
+        function updateTonConvert() {
+            const stars = document.getElementById('tonAmount').value;
+            const ton = (stars / 100).toFixed(2);
+            document.getElementById('tonConvert').textContent = `≈ ${ton} TON`;
+        }
+
+        function payWithStars() {
+            const amount = document.getElementById('starsAmount').value;
+            const status = document.getElementById('starsStatus');
+            
+            status.classList.add('active');
+            status.innerHTML = `
+                <div style="color: var(--accent-primary);">⏳ Ожидание оплаты...</div>
+                <div style="font-size: 12px; margin-top: 8px;">Подтвердите платеж в Telegram</div>
+            `;
+            
+            // Имитация оплаты
+            setTimeout(() => {
+                currentUser.balance += parseInt(amount);
+                document.getElementById('balance').textContent = currentUser.balance;
+                
+                status.innerHTML = `
+                    <div style="color: var(--success);">✅ Оплата получена!</div>
+                    <div style="font-size: 12px; margin-top: 8px;">+${amount} ⭐ зачислено</div>
+                `;
+                
+                showToast(`+${amount} ⭐ получено!`, 'success');
+                
+                setTimeout(() => {
+                    status.classList.remove('active');
+                }, 3000);
+            }, 2000);
+        }
+
+        function payWithTON() {
+            const amount = document.getElementById('tonAmount').value;
+            const status = document.getElementById('tonStatus');
+            
+            status.classList.add('active');
+            status.innerHTML = `
+                <div style="color: var(--accent-primary);">⏳ Проверка платежа...</div>
+                <div style="font-size: 12px; margin-top: 8px;">Отправлено ${(amount/100).toFixed(2)} TON</div>
+            `;
+            
+            // Имитация проверки
+            setTimeout(() => {
+                currentUser.balance += parseInt(amount);
+                document.getElementById('balance').textContent = currentUser.balance;
+                
+                status.innerHTML = `
+                    <div style="color: var(--success);">✅ Платеж подтвержден!</div>
+                    <div style="font-size: 12px; margin-top: 8px;">+${amount} ⭐ зачислено</div>
+                `;
+                
+                showToast(`+${amount} ⭐ получено!`, 'success');
+                
+                setTimeout(() => {
+                    status.classList.remove('active');
+                }, 3000);
+            }, 2000);
+        }
+
+        function copyTonAddress() {
+            navigator.clipboard.writeText(TON_ADDRESS);
+            showToast('Адрес скопирован', 'success');
+        }
+
+        function generateTONQR() {
+            QRCode.toDataURL(TON_ADDRESS, { width: 200, margin: 1 }, (err, url) => {
+                if (!err) {
+                    document.getElementById('tonQrCode').innerHTML = `<img src="${url}" alt="TON QR">`;
                 }
-                if (minutes < 0) {
-                    minutes = 15;
-                    // Новый розыгрыш
-                    document.getElementById('prizePool').textContent = Math.floor(1500 + Math.random() * 1000) + ' ⭐';
-                }
-                document.getElementById('prizeTimer').textContent = `Осталось: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-            }, 1000);
+            });
+        }
+
+        // ===== НАВИГАЦИЯ =====
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Здесь будет переключение контента
+            showToast(`Раздел ${tab} в разработке`, 'info');
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+        }
+
+        function toggleMenu() {
+            showToast('Меню в разработке', 'info');
+        }
+
+        function showDepositModal() {
+            document.querySelector('.payment-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         // ===== АПГРЕЙДЫ =====
@@ -1543,10 +1844,13 @@
             }
             
             currentUser.balance -= price;
-            currentUser.upgrades[type]++;
             document.getElementById('balance').textContent = currentUser.balance;
             
-            showToast(`Апгрейд ${type} улучшен до ${currentUser.upgrades[type]} уровня!`, 'success');
+            const levelElement = document.getElementById(type + 'Level');
+            const currentLevel = parseInt(levelElement.textContent.replace('lvl ', ''));
+            levelElement.textContent = `lvl ${currentLevel + 1}`;
+            
+            showToast(`Апгрейд ${type} улучшен!`, 'success');
         }
 
         // ===== МАГАЗИН =====
@@ -1555,7 +1859,7 @@
                 rocket_skin: 500, 
                 nft_ticket: 100, 
                 boost_3x: 200, 
-                premium_pass: 1000 
+                premium: 1000 
             };
             const price = prices[item];
             
@@ -1571,10 +1875,41 @@
                 rocket_skin: 'Скин ракеты',
                 nft_ticket: 'NFT билет',
                 boost_3x: 'Boost x3',
-                premium_pass: 'Premium Pass'
+                premium: 'Premium'
             };
             
             showToast(`${names[item]} куплен!`, 'success');
+        }
+
+        // ===== СИМУЛЯЦИЯ ОНЛАЙН =====
+        function startOnlineSimulation() {
+            setInterval(() => {
+                // Обновляем статусы игроков
+                realPlayers.forEach(p => {
+                    if (p.status === 'playing') {
+                        p.multiplier += 0.01;
+                    }
+                });
+                
+                // Добавляем случайных игроков
+                if (Math.random() > 0.7) {
+                    const randomId = Math.floor(Math.random() * 10000);
+                    realPlayers.push({
+                        id: randomId,
+                        name: ['CryptoKing', 'MoonWalker', 'StarDust'][Math.floor(Math.random() * 3)],
+                        bet: Math.floor(Math.random() * 1000) + 100,
+                        multiplier: 1.0,
+                        status: ['playing', 'waiting'][Math.floor(Math.random() * 2)]
+                    });
+                    
+                    if (realPlayers.length > 10) {
+                        realPlayers = realPlayers.slice(-10);
+                    }
+                }
+                
+                updatePlayersTable();
+                updateOnlineCount();
+            }, 3000);
         }
 
         // ===== МОДАЛКИ =====
@@ -1594,15 +1929,6 @@
             document.getElementById('toastContainer').appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
-
-        // ===== МЕНЮ =====
-        function toggleMenu() {
-            showToast('Меню в разработке', 'info');
-        }
-
-        function showDeposit() {
-            showToast('Пополнение через @admin', 'info');
-        }
     </script>
 </body>
-                    </html>
+    </html>
