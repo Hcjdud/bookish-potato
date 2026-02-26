@@ -1,7 +1,7 @@
-{
+here{
   "name": "gifts-battle",
-  "version": "2.0.0",
-  "description": "Gifts Battle - Telegram Web App с 3D графикой",
+  "version": "3.0.0",
+  "description": "GiftDrop - Telegram Web App с покупкой звёзд и NFT",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,7 +10,6 @@
   "dependencies": {
     "express": "^4.18.2",
     "pg": "^8.11.3",
-    "sqlite3": "^5.1.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "multer": "^1.4.5-lts.1",
@@ -21,7 +20,6 @@
     "express-rate-limit": "^7.1.5",
     "compression": "^1.7.4",
     "helmet": "^7.1.0",
-    "ws": "^8.14.2",
     "socket.io": "^4.7.2",
     "axios": "^1.6.2",
     "telegraf": "^4.15.0"
