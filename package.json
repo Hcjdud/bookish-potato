@@ -1,11 +1,10 @@
-here{
+{
   "name": "gifts-battle",
   "version": "3.0.0",
-  "description": "GiftDrop - Telegram Web App с покупкой звёзд и NFT",
+  "description": "GiftDrop - Telegram Web App",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -23,8 +22,5 @@ here{
     "socket.io": "^4.7.2",
     "axios": "^1.6.2",
     "telegraf": "^4.15.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
   }
 }
