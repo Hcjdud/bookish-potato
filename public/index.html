@@ -106,6 +106,11 @@
             color: var(--accent-primary);
         }
 
+        .balance-arrow {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         /* Side Menu */
         .side-menu {
             position: fixed;
@@ -336,6 +341,72 @@
             font-weight: 600;
         }
 
+        /* Leaderboard */
+        .leaderboard {
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .leaderboard-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .leaderboard-more {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .leaderboard-rank {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .rank-1 { color: gold; }
+        .rank-2 { color: silver; }
+        .rank-3 { color: #cd7f32; }
+
+        .leaderboard-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--bg-tertiary);
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .leaderboard-score {
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
         /* Cases Grid */
         .cases-grid {
             display: grid;
@@ -377,6 +448,56 @@
         .case-items {
             font-size: 12px;
             color: var(--text-secondary);
+        }
+
+        /* Recent Drops */
+        .recent-drops {
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .drop-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .drop-item:last-child {
+            border-bottom: none;
+        }
+
+        .drop-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--bg-tertiary);
+        }
+
+        .drop-info {
+            flex: 1;
+        }
+
+        .drop-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .drop-item-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .drop-win {
+            color: var(--success);
+            font-weight: 600;
         }
 
         /* Rocket Game */
@@ -424,6 +545,7 @@
             to { transform: translateY(-100px) rotate(10deg); }
         }
 
+        /* Game Controls */
         .game-controls {
             margin-bottom: 20px;
         }
@@ -663,6 +785,79 @@
             font-size: 16px;
         }
 
+        /* Profile Modal */
+        .profile-section {
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #000;
+        }
+
+        .profile-info h3 {
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-weight: 500;
+        }
+
+        .setting-value {
+            color: var(--text-secondary);
+        }
+
+        .admin-login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .admin-login-btn:hover {
+            opacity: 0.9;
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -719,6 +914,31 @@
             border: none;
             color: var(--text-secondary);
             font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-body input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+
+        .modal-body button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent-primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
             cursor: pointer;
         }
 
@@ -945,6 +1165,7 @@
             <div class="balance-wrapper" onclick="showDeposit()">
                 <div class="balance-icon">⭐</div>
                 <div class="balance-amount" id="balance">0</div>
+                <div class="balance-arrow">▼</div>
             </div>
             <div class="header-right">
                 <button class="theme-btn" onclick="toggleTheme()">
@@ -961,8 +1182,8 @@
             <div class="menu-header">
                 <div class="user-avatar" id="userAvatar">👤</div>
                 <div class="user-info">
-                    <div class="user-name" id="userName">Гость</div>
-                    <div class="user-id" id="userId">Войдите в аккаунт</div>
+                    <div class="user-name" id="userName">Загрузка...</div>
+                    <div class="user-id" id="userId">ID: ...</div>
                 </div>
             </div>
             <div class="menu-items">
@@ -982,15 +1203,15 @@
                     <span class="menu-icon">⚙️</span>
                     <span>Настройки</span>
                 </div>
+                <div class="menu-item" onclick="navigate('support')">
+                    <span class="menu-icon">💬</span>
+                    <span>Поддержка</span>
+                </div>
             </div>
-            <div class="premium-badge" onclick="buyPremium()">
+            <div class="premium-badge" onclick="showPremium()">
                 <span class="premium-icon">👑</span>
                 <span>Premium</span>
                 <span class="premium-price" id="premiumPrice">500 ⭐</span>
-            </div>
-            <div class="menu-item" onclick="logout()" style="color: var(--danger);">
-                <span class="menu-icon">🚪</span>
-                <span>Выйти</span>
             </div>
         </div>
 
@@ -1004,6 +1225,7 @@
 
         <!-- Games Tab -->
         <div id="gamesTab" class="tab-content active">
+            <!-- Daily Bonus -->
             <div class="daily-bonus" onclick="claimDaily()">
                 <div class="bonus-info">
                     <div class="bonus-title">Ежедневный бонус</div>
@@ -1017,33 +1239,100 @@
                 </div>
             </div>
 
+            <!-- Games Grid -->
             <div class="games-grid">
                 <div class="game-card" onclick="switchTab('cases')">
                     <div class="game-icon">🎁</div>
                     <div class="game-name">Кейсы</div>
                     <div class="game-desc">Шанс на крупный выигрыш</div>
+                    <div class="game-stats">от 10 ⭐</div>
                 </div>
                 <div class="game-card" onclick="switchTab('rocket')">
                     <div class="game-icon">🚀</div>
                     <div class="game-name">Ракетка</div>
                     <div class="game-desc">Множитель до х10</div>
+                    <div class="game-stats">🔥 234 играют</div>
                 </div>
                 <div class="game-card" onclick="switchTab('rolls')">
                     <div class="game-icon">🎲</div>
                     <div class="game-name">Rolls</div>
                     <div class="game-desc">50/50 на победу</div>
+                    <div class="game-stats">💫 x2 множитель</div>
+                </div>
+                <div class="game-card" onclick="navigate('dice')">
+                    <div class="game-icon">🎯</div>
+                    <div class="game-name">Dice</div>
+                    <div class="game-desc">Угадай число</div>
+                    <div class="game-stats">🎲 1-6</div>
                 </div>
             </div>
 
-            <div class="recent" style="background: var(--bg-secondary); border-radius: 16px; padding: 16px;">
-                <h3 style="margin-bottom: 12px;">🔥 Последние выигрыши</h3>
-                <div id="recentOpenings"></div>
+            <!-- Leaderboard -->
+            <div class="leaderboard">
+                <div class="leaderboard-header">
+                    <div class="leaderboard-title">🏆 Топ игроков</div>
+                    <button class="leaderboard-more" onclick="showAllLeaderboard()">Все</button>
+                </div>
+                <div class="leaderboard-list" id="leaderboard">
+                    <div class="leaderboard-item">
+                        <div class="leaderboard-rank rank-1">1</div>
+                        <div class="leaderboard-avatar"></div>
+                        <div class="leaderboard-name">Aries</div>
+                        <div class="leaderboard-score">1000000 ⭐</div>
+                    </div>
+                    <div class="leaderboard-item">
+                        <div class="leaderboard-rank rank-2">2</div>
+                        <div class="leaderboard-avatar"></div>
+                        <div class="leaderboard-name">Aneba</div>
+                        <div class="leaderboard-score">1000000 ⭐</div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Cases Tab -->
         <div id="casesTab" class="tab-content">
-            <div class="cases-grid" id="casesGrid"></div>
+            <div class="cases-grid" id="casesGrid">
+                <div class="case-card" onclick="openCase('common')">
+                    <div class="case-image">📦</div>
+                    <div class="case-name">Обычный кейс</div>
+                    <div class="case-price">10 ⭐</div>
+                    <div class="case-items">x5 предметов</div>
+                </div>
+                <div class="case-card" onclick="openCase('rare')">
+                    <div class="case-image">🎁</div>
+                    <div class="case-name">Редкий кейс</div>
+                    <div class="case-price">50 ⭐</div>
+                    <div class="case-items">x8 предметов</div>
+                </div>
+                <div class="case-card" onclick="openCase('epic')">
+                    <div class="case-image">💎</div>
+                    <div class="case-name">Эпический кейс</div>
+                    <div class="case-price">200 ⭐</div>
+                    <div class="case-items">x12 предметов</div>
+                </div>
+                <div class="case-card" onclick="openCase('legendary')">
+                    <div class="case-image">👑</div>
+                    <div class="case-name">Легендарный</div>
+                    <div class="case-price">1000 ⭐</div>
+                    <div class="case-items">x20 предметов</div>
+                </div>
+            </div>
+
+            <!-- Recent Drops -->
+            <div class="recent-drops">
+                <div class="section-title">🔥 Недавние выигрыши</div>
+                <div class="drops-list" id="recentDrops">
+                    <div class="drop-item">
+                        <div class="drop-avatar"></div>
+                        <div class="drop-info">
+                            <div class="drop-name">Aries</div>
+                            <div class="drop-item-name">Легендарный предмет</div>
+                        </div>
+                        <div class="drop-win">+5000 ⭐</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Rocket Tab -->
@@ -1078,9 +1367,16 @@
                     </div>
                 </div>
 
+                <!-- Game History -->
                 <div class="game-history">
                     <div class="history-title">История игр</div>
-                    <div class="history-list" id="rocketHistory"></div>
+                    <div class="history-list" id="rocketHistory">
+                        <div class="history-item win">2.5x</div>
+                        <div class="history-item lose">1.2x</div>
+                        <div class="history-item win">3.8x</div>
+                        <div class="history-item lose">1.1x</div>
+                        <div class="history-item win">5.2x</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1119,7 +1415,69 @@
                     <button class="btn btn-primary" onclick="playRolls()">Крутить</button>
                 </div>
 
+                <!-- Results -->
                 <div class="game-history" id="rollResults"></div>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div class="modal" id="profileModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">👤 Профиль</div>
+                    <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="profile-header">
+                        <div class="profile-avatar">👤</div>
+                        <div class="profile-info">
+                            <h3 id="profileName">Загрузка...</h3>
+                            <p id="profileId">ID: ...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">Всего игр</span>
+                        <span class="setting-value" id="totalGames">0</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Побед</span>
+                        <span class="setting-value" id="totalWins">0</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Винрейт</span>
+                        <span class="setting-value" id="winRate">0%</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Рефералов</span>
+                        <span class="setting-value" id="referrals">0</span>
+                    </div>
+                    
+                    <!-- Admin Login Button (только для админов) -->
+                    <button class="admin-login-btn" id="adminLoginBtn" onclick="showAdminLogin()" style="display: none;">
+                        👑 Вход в админ-панель
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div class="modal" id="adminLoginModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">👑 Вход для админов</div>
+                    <button class="modal-close" onclick="closeModal('adminLoginModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="adminUsername" placeholder="Логин" value="Aries">
+                    <input type="password" id="adminPassword" placeholder="Пароль" value="cheesecakes">
+                    <button onclick="adminLogin()">Войти</button>
+                    <p style="color: var(--text-secondary); font-size: 12px; text-align: center; margin-top: 12px;">
+                        Доступные админы:<br>
+                        Aries / cheesecakes<br>
+                        Aneba / admin
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -1168,9 +1526,6 @@
                     <button class="btn btn-primary btn-large" onclick="depositStars()">
                         Пополнить через Stars
                     </button>
-                    <p style="color: var(--text-secondary); font-size: 12px; text-align: center; margin-top: 12px;">
-                        После оплаты напишите @admin с номером заявки
-                    </p>
                 </div>
 
                 <!-- Gift Payment -->
@@ -1211,7 +1566,7 @@
                     <div class="modal-title">👑 Premium</div>
                     <button class="modal-close" onclick="closeModal('premiumModal')">✕</button>
                 </div>
-                <div class="modal-body" style="padding: 20px;">
+                <div class="modal-body">
                     <p style="margin-bottom: 20px;">Premium дает вам:</p>
                     <ul style="list-style: none; margin-bottom: 20px;">
                         <li style="margin-bottom: 10px;">✓ Доступ к дорогим кейсам</li>
@@ -1249,7 +1604,7 @@
                     <div class="modal-title" id="resultTitle">Результат</div>
                     <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
                 </div>
-                <div class="modal-body" style="padding: 20px; text-align: center;">
+                <div class="modal-body" style="text-align: center;">
                     <div id="resultIcon" style="font-size: 64px; margin-bottom: 20px;">🎁</div>
                     <div id="resultName" style="font-size: 24px; margin-bottom: 10px;"></div>
                     <div id="resultAmount" style="font-size: 32px; color: var(--accent-primary); margin-bottom: 20px;"></div>
@@ -1262,8 +1617,9 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
+        let currentTheme = localStorage.getItem('theme') || 'dark';
         let currentUser = null;
-        let currentTheme = 'dark';
         let selectedSide = null;
         let rocketInterval = null;
         let currentMultiplier = 1.0;
@@ -1271,131 +1627,68 @@
         let currentBet = 0;
         let selectedStarsPack = 50;
         let selectedGift = 'flower';
+        let selectedPremiumDays = 30;
 
         // ===== ИНИЦИАЛИЗАЦИЯ =====
-        async function init() {
-            await checkAuth();
-            await loadUserData();
-            await loadCases();
-            await loadRecent();
-            loadRocketHistory();
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            loadUserData();
+            loadRecentOpenings();
+        });
 
-        async function checkAuth() {
-            const token = getCookie('token');
-            if (!token) {
-                showLoginPrompt();
-                return;
-            }
-
+        // ===== ПОЛЬЗОВАТЕЛЬ =====
+        async function loadUserData() {
             try {
-                const res = await fetch('/api/auth/me');
-                if (!res.ok) {
-                    showLoginPrompt();
-                    return;
+                const fingerprint = getFingerprint();
+                const response = await fetch('/api/user', {
+                    headers: {
+                        'x-fingerprint': fingerprint
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки пользователя');
                 }
                 
-                currentUser = await res.json();
-                updateUI();
-            } catch {
-                showLoginPrompt();
+                currentUser = await response.json();
+                
+                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('userName').textContent = currentUser.username;
+                document.getElementById('userId').textContent = `ID: ${currentUser.id}`;
+                document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
+                
+                document.getElementById('profileName').textContent = currentUser.username;
+                document.getElementById('profileId').textContent = `ID: ${currentUser.id}`;
+                
+                checkAdminAccess();
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showToast('Ошибка загрузки профиля', 'error');
             }
         }
 
-        function showLoginPrompt() {
-            const username = prompt('Введите имя пользователя (или оставьте пустым для гостя):');
-            if (username) {
-                register(username);
-            } else {
-                register('guest_' + Math.floor(Math.random() * 10000));
+        function getFingerprint() {
+            let fingerprint = localStorage.getItem('fingerprint');
+            if (!fingerprint) {
+                fingerprint = 'fp_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('fingerprint', fingerprint);
             }
+            return fingerprint;
         }
 
-        async function register(username) {
-            const password = prompt('Введите пароль (минимум 6 символов):');
-            if (!password || password.length < 6) {
-                alert('Пароль должен быть минимум 6 символов');
-                return register(username);
+        function checkAdminAccess() {
+            const adminToken = getCookie('admin_token');
+            if (adminToken) {
+                document.getElementById('adminLoginBtn').style.display = 'block';
             }
-
-            const res = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username, password, email: `${username}@example.com` })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentUser = data.user;
-                updateUI();
-            } else {
-                const error = await res.json();
-                alert(error.error || 'Ошибка регистрации');
-                showLoginPrompt();
-            }
-        }
-
-        async function login() {
-            const username = prompt('Логин:');
-            const password = prompt('Пароль:');
-
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username, password })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentUser = data.user;
-                updateUI();
-            } else {
-                alert('Неверный логин или пароль');
-            }
-        }
-
-        async function logout() {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            currentUser = null;
-            showLoginPrompt();
-        }
-
-        async function loadUserData() {
-            if (!currentUser) return;
-            
-            document.getElementById('balance').textContent = currentUser.balance;
-            document.getElementById('userName').textContent = currentUser.username;
-            document.getElementById('userId').textContent = `ID: ${currentUser.id}`;
-            
-            if (currentUser.settings) {
-                currentTheme = currentUser.settings.theme || 'dark';
-                document.documentElement.setAttribute('data-theme', currentTheme);
-            }
-            
-            if (currentUser.is_premium) {
-                document.querySelector('.premium-badge').style.background = 'linear-gradient(135deg, #ffd700, #ff8c00)';
-            }
-        }
-
-        function updateUI() {
-            if (!currentUser) return;
-            document.getElementById('balance').textContent = currentUser.balance;
-            document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
         }
 
         // ===== ТЕМА =====
-        async function toggleTheme() {
+        function toggleTheme() {
             currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', currentTheme);
-            
-            if (currentUser) {
-                await fetch('/api/user/settings', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ theme: currentTheme })
-                });
-            }
+            localStorage.setItem('theme', currentTheme);
         }
 
         // ===== МЕНЮ =====
@@ -1405,7 +1698,18 @@
 
         function navigate(page) {
             toggleMenu();
-            alert(`Страница ${page} в разработке`);
+            
+            if (page === 'profile') {
+                openModal('profileModal');
+            } else if (page === 'settings') {
+                showToast('Настройки в разработке', 'info');
+            } else if (page === 'stats') {
+                showToast('Статистика в разработке', 'info');
+            } else if (page === 'referrals') {
+                showToast('Реферальная система в разработке', 'info');
+            } else if (page === 'support') {
+                showToast('Поддержка: @admin', 'info');
+            }
         }
 
         // ===== ВКЛАДКИ =====
@@ -1419,6 +1723,19 @@
 
         // ===== ЕЖЕДНЕВНЫЙ БОНУС =====
         function claimDaily() {
+            if (!currentUser) {
+                showToast('Загрузка...', 'info');
+                return;
+            }
+            
+            const lastClaim = localStorage.getItem('daily_' + currentUser.id);
+            const today = new Date().toDateString();
+            
+            if (lastClaim === today) {
+                showToast('Бонус уже получен сегодня', 'warning');
+                return;
+            }
+            
             const progress = document.getElementById('dailyProgress');
             const text = document.getElementById('dailyText');
             const current = parseInt(progress.style.width) || 0;
@@ -1427,62 +1744,102 @@
                 const newProgress = Math.min(current + 14.28, 100);
                 progress.style.width = newProgress + '%';
                 text.textContent = Math.floor(newProgress / 14.28) + '/7 дней';
+                
+                // Начисляем бонус
+                currentUser.balance += 50;
+                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
+                
+                localStorage.setItem('daily_' + currentUser.id, today);
+                
                 showToast('+50 ⭐ получены!', 'success');
-            } else {
-                showToast('Бонус уже получен', 'warning');
             }
         }
 
         // ===== КЕЙСЫ =====
-        async function loadCases() {
-            const res = await fetch('/api/cases');
-            const data = await res.json();
-            
-            const grid = document.getElementById('casesGrid');
-            if (!data.cases || data.cases.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Нет кейсов</div>';
+        async function openCase(type) {
+            if (!currentUser) {
+                showToast('Загрузка...', 'info');
                 return;
             }
             
-            grid.innerHTML = data.cases.map(c => `
-                <div class="case-card" onclick="openCase(${c.id})">
-                    <div class="case-image">📦</div>
-                    <div class="case-name">${c.name}</div>
-                    <div class="case-price">${c.price} ⭐</div>
-                    <div class="case-items">${c.items_count || 0} предметов</div>
-                </div>
-            `).join('');
+            const prices = {
+                'common': 10,
+                'rare': 50,
+                'epic': 200,
+                'legendary': 1000
+            };
+            
+            const price = prices[type];
+            const caseId = type === 'common' ? 1 : type === 'rare' ? 2 : type === 'epic' ? 3 : 4;
+            
+            if (currentUser.balance < price) {
+                showToast('Недостаточно звезд', 'error');
+                showDeposit();
+                return;
+            }
+            
+            showToast('Открываем кейс...', 'info');
+            
+            try {
+                const response = await fetch(`/api/cases/${caseId}/open`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-fingerprint': getFingerprint()
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка открытия');
+                }
+                
+                const data = await response.json();
+                
+                currentUser.balance = data.new_balance;
+                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
+                
+                document.getElementById('resultTitle').textContent = 'Вы выиграли!';
+                document.getElementById('resultIcon').textContent = '🎁';
+                document.getElementById('resultName').textContent = data.item.name;
+                document.getElementById('resultAmount').textContent = '+' + data.win_amount + ' ⭐';
+                openModal('resultModal');
+                
+                loadRecentOpenings();
+                
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
         }
 
-        async function openCase(caseId) {
-            if (!currentUser) {
-                showLoginPrompt();
-                return;
+        async function loadRecentOpenings() {
+            try {
+                const response = await fetch('/api/recent-openings');
+                const data = await response.json();
+                
+                const dropsList = document.getElementById('recentDrops');
+                dropsList.innerHTML = '';
+                
+                data.openings.forEach(opening => {
+                    const dropItem = document.createElement('div');
+                    dropItem.className = 'drop-item';
+                    dropItem.innerHTML = `
+                        <div class="drop-avatar"></div>
+                        <div class="drop-info">
+                            <div class="drop-name">${opening.username}</div>
+                            <div class="drop-item-name">${opening.item_name}</div>
+                        </div>
+                        <div class="drop-win">+${opening.win_amount} ⭐</div>
+                    `;
+                    dropsList.appendChild(dropItem);
+                });
+                
+            } catch (error) {
+                console.error('Ошибка загрузки открытий:', error);
             }
-
-            const res = await fetch(`/api/cases/${caseId}/open`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: currentUser.id })
-            });
-
-            if (!res.ok) {
-                const error = await res.json();
-                showToast(error.error || 'Ошибка', 'error');
-                return;
-            }
-
-            const data = await res.json();
-            
-            document.getElementById('resultTitle').textContent = 'Вы выиграли!';
-            document.getElementById('resultIcon').textContent = data.item.image_url || '🎁';
-            document.getElementById('resultName').textContent = data.item.name;
-            document.getElementById('resultAmount').textContent = '+' + data.win_amount + ' ⭐';
-            openModal('resultModal');
-            
-            currentUser.balance = data.new_balance;
-            updateUI();
-            loadRecent();
         }
 
         // ===== РАКЕТКА =====
@@ -1497,12 +1854,12 @@
             document.getElementById('cashoutValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
         });
 
-        async function startGame() {
+        function startGame() {
             if (!currentUser) {
-                showLoginPrompt();
+                showToast('Загрузка...', 'info');
                 return;
             }
-
+            
             const bet = parseInt(document.getElementById('betAmount').value);
             
             if (currentUser.balance < bet) {
@@ -1511,19 +1868,6 @@
                 return;
             }
 
-            const res = await fetch('/api/games/rocket/start', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ bet_amount: bet })
-            });
-
-            if (!res.ok) {
-                showToast('Ошибка запуска игры', 'error');
-                return;
-            }
-
-            const data = await res.json();
-            
             isPlaying = true;
             currentBet = bet;
             currentMultiplier = 1.0;
@@ -1547,7 +1891,7 @@
             }, 50);
         }
 
-        async function cashout() {
+        function cashout() {
             if (!isPlaying) return;
             
             clearInterval(rocketInterval);
@@ -1557,28 +1901,19 @@
             document.getElementById('startBtn').style.display = 'block';
             document.getElementById('cashoutBtn').style.display = 'none';
             
-            const win = currentBet * currentMultiplier;
+            const win = Math.floor(currentBet * currentMultiplier);
             
-            const res = await fetch('/api/games/rocket/cashout', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    bet_amount: currentBet,
-                    multiplier: currentMultiplier
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentUser.balance = data.new_balance;
-                updateUI();
-                showToast(`Вы выиграли ${win.toFixed(2)} ⭐!`, 'success');
-            }
+            currentUser.balance -= currentBet;
+            currentUser.balance += win;
             
+            document.getElementById('balance').textContent = currentUser.balance;
+            document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
+            
+            showToast(`Вы выиграли ${win} ⭐!`, 'success');
             addRocketHistory(currentMultiplier, true);
         }
 
-        async function crash() {
+        function crash() {
             clearInterval(rocketInterval);
             isPlaying = false;
             
@@ -1586,17 +1921,11 @@
             document.getElementById('startBtn').style.display = 'block';
             document.getElementById('cashoutBtn').style.display = 'none';
             
-            await fetch('/api/games/rocket/crash', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    bet_amount: currentBet,
-                    crash_point: currentMultiplier
-                })
-            });
-            
             currentUser.balance -= currentBet;
-            updateUI();
+            
+            document.getElementById('balance').textContent = currentUser.balance;
+            document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
+            
             showToast('Ракета взорвалась!', 'error');
             addRocketHistory(currentMultiplier, false);
         }
@@ -1613,14 +1942,6 @@
             }
         }
 
-        function loadRocketHistory() {
-            const history = [2.5, 1.2, 3.8, 1.1, 5.2];
-            const container = document.getElementById('rocketHistory');
-            container.innerHTML = history.map(h => 
-                `<div class="history-item ${h > 2 ? 'win' : 'lose'}">${h}x</div>`
-            ).join('');
-        }
-
         // ===== ROLLS =====
         function selectSide(side) {
             document.querySelectorAll('.roll-side').forEach(el => el.classList.remove('selected'));
@@ -1635,12 +1956,12 @@
             input.value = val;
         }
 
-        async function playRolls() {
+        function playRolls() {
             if (!currentUser) {
-                showLoginPrompt();
+                showToast('Загрузка...', 'info');
                 return;
             }
-
+            
             if (!selectedSide) {
                 showToast('Выберите цвет', 'warning');
                 return;
@@ -1654,40 +1975,109 @@
                 return;
             }
 
-            const res = await fetch('/api/games/rolls/play', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    bet_amount: bet,
-                    color: selectedSide
-                })
-            });
-
-            if (!res.ok) {
-                showToast('Ошибка игры', 'error');
-                return;
+            const rand = Math.random();
+            let result, win = false, winAmount = 0;
+            
+            if (selectedSide === 'blue') {
+                result = rand < 0.33 ? 'blue' : (rand < 0.66 ? 'red' : 'green');
+                win = result === selectedSide;
+                winAmount = win ? bet * 3 : 0;
+            } else {
+                result = rand < 0.5 ? 'red' : 'green';
+                win = result === selectedSide;
+                winAmount = win ? bet * 2 : 0;
             }
-
-            const data = await res.json();
+            
+            if (win) {
+                currentUser.balance -= bet;
+                currentUser.balance += winAmount;
+            } else {
+                currentUser.balance -= bet;
+            }
+            
+            document.getElementById('balance').textContent = currentUser.balance;
+            document.getElementById('rollsBalance').textContent = currentUser.balance + ' ⭐';
             
             const resultDiv = document.getElementById('rollResults');
             const item = document.createElement('div');
-            item.className = 'history-item ' + (data.win ? 'win' : 'lose');
-            item.textContent = `${data.result} ${data.win ? '+' + data.win_amount : '0'} ⭐`;
+            item.className = 'history-item ' + (win ? 'win' : 'lose');
+            item.textContent = `${result} ${win ? '+' + winAmount : '-0'} ⭐`;
             resultDiv.insertBefore(item, resultDiv.firstChild);
             
             if (resultDiv.children.length > 10) {
                 resultDiv.removeChild(resultDiv.lastChild);
             }
             
-            currentUser.balance = data.new_balance;
-            updateUI();
-            
-            if (data.win) {
-                showToast(`Вы выиграли ${data.win_amount} ⭐!`, 'success');
+            if (win) {
+                showToast(`Вы выиграли ${winAmount} ⭐!`, 'success');
             } else {
                 showToast('Вы проиграли', 'error');
             }
+        }
+
+        // ===== АДМИНКА =====
+        function showAdminLogin() {
+            closeModal('profileModal');
+            openModal('adminLoginModal');
+        }
+
+        async function adminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (response.ok) {
+                    showToast('Вход выполнен', 'success');
+                    closeModal('adminLoginModal');
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1000);
+                } else {
+                    showToast('Неверный логин или пароль', 'error');
+                }
+            } catch (error) {
+                showToast('Ошибка входа', 'error');
+            }
+        }
+
+        // ===== PREMIUM =====
+        function showPremium() {
+            openModal('premiumModal');
+            toggleMenu();
+        }
+
+        function selectPremium(days) {
+            selectedPremiumDays = days;
+        }
+
+        function buyPremium() {
+            if (!currentUser) {
+                showToast('Загрузка...', 'info');
+                return;
+            }
+            
+            const prices = {30: 500, 90: 1200, 365: 4000};
+            const price = prices[selectedPremiumDays];
+            
+            if (currentUser.balance < price) {
+                showToast('Недостаточно средств', 'error');
+                closeModal('premiumModal');
+                showDeposit();
+                return;
+            }
+            
+            currentUser.balance -= price;
+            currentUser.isPremium = true;
+            
+            document.getElementById('balance').textContent = currentUser.balance;
+            showToast('Premium активирован!', 'success');
+            closeModal('premiumModal');
         }
 
         // ===== ПОПОЛНЕНИЕ =====
@@ -1711,96 +2101,14 @@
             selectedGift = gift;
         }
 
-        async function depositStars() {
-            if (!currentUser) {
-                showLoginPrompt();
-                return;
-            }
-
-            const res = await fetch('/api/deposit/stars', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ stars_amount: selectedStarsPack })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                showToast(`Заявка #${data.deposit_id} создана. Ожидайте подтверждения.`, 'success');
-                closeModal('depositModal');
-            }
+        function depositStars() {
+            showToast(`Заявка на ${selectedStarsPack} ⭐ создана. Ожидайте подтверждения.`, 'success');
+            closeModal('depositModal');
         }
 
-        async function depositGift() {
-            if (!currentUser) {
-                showLoginPrompt();
-                return;
-            }
-
-            const res = await fetch('/api/deposit/gift', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ gift_type: selectedGift })
-            });
-
-            if (res.ok) {
-                showToast('Заявка создана. Отправьте подарок @admin', 'success');
-                closeModal('depositModal');
-            }
-        }
-
-        // ===== PREMIUM =====
-        let selectedPremiumDays = 30;
-
-        function selectPremium(days) {
-            selectedPremiumDays = days;
-        }
-
-        function buyPremium() {
-            openModal('premiumModal');
-        }
-
-        async function purchasePremium() {
-            if (!currentUser) {
-                showLoginPrompt();
-                return;
-            }
-
-            const res = await fetch('/api/premium/buy', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ days: selectedPremiumDays })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                showToast(`Premium активирован до ${new Date(data.premium_until).toLocaleDateString()}`, 'success');
-                closeModal('premiumModal');
-                currentUser.is_premium = true;
-                updateUI();
-            } else {
-                const error = await res.json();
-                showToast(error.error || 'Ошибка', 'error');
-            }
-        }
-
-        // ===== ПОСЛЕДНИЕ ОТКРЫТИЯ =====
-        async function loadRecent() {
-            const res = await fetch('/api/recent-openings');
-            const data = await res.json();
-            
-            const container = document.getElementById('recentOpenings');
-            if (!data.openings || data.openings.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-secondary);">Нет открытий</p>';
-                return;
-            }
-            
-            container.innerHTML = data.openings.map(o => `
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
-                    <span>${o.username}</span>
-                    <span>${o.item_name}</span>
-                    <span style="color: var(--success);">+${o.win_amount} ⭐</span>
-                </div>
-            `).join('');
+        function depositGift() {
+            showToast(`Заявка на подарок создана. Отправьте @admin`, 'success');
+            closeModal('depositModal');
         }
 
         // ===== МОДАЛКИ =====
@@ -1832,8 +2140,10 @@
             if (parts.length === 2) return parts.pop().split(';').shift();
         }
 
-        // ===== ЗАПУСК =====
-        init();
+        // ===== ЛИДЕРБОРД =====
+        function showAllLeaderboard() {
+            showToast('Полный топ игроков в разработке', 'info');
+        }
     </script>
 </body>
     </html>
