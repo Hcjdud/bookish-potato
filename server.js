@@ -8,28 +8,82 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
+const helmet = require('helmet');
+const http = require('http');
+const { Server } = require('socket.io');
+const axios = require('axios');
+const { Telegraf } = require('telegraf');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'gifts-battle-secret-key-2024';
-
-// ===== ПОДКЛЮЧЕНИЕ К POSTGRESQL =====
-const pool = new Pool({
-  connectionString: 'postgresql://gifts_db_i4ig_user:pDtsgu5KrXJnReT2zW2zFxzAWd0XF57L@dpg-d6fvlha4d50c73dfc1n0-a/gifts_db_i4ig',
-  ssl: {
-    rejectUnauthorized: false
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
-// Rate limiting
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'gifts-battle-secret-key-2024';
+const BOT_TOKEN = process.env.BOT_TOKEN;
+
+// ===== TELEGRAM БОТ =====
+let bot;
+if (BOT_TOKEN) {
+  bot = new Telegraf(BOT_TOKEN);
+  
+  bot.start(async (ctx) => {
+    const startPayload = ctx.payload;
+    const userId = ctx.from.id;
+    const username = ctx.from.username || ctx.from.first_name;
+    const firstName = ctx.from.first_name;
+    const photoUrl = ctx.from.photo_url;
+    
+    // Сохраняем реферальный код
+    if (startPayload && startPayload.startsWith('ref_')) {
+      const referrerId = startPayload.replace('ref_', '');
+      await saveReferral(userId, referrerId);
+    }
+    
+    // Отправляем приветственное сообщение
+    ctx.reply(`🎮 Добро пожаловать в GiftDrop, ${firstName}!`, {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: '🎁 Открыть приложение', web_app: { url: 'https://mode-goto.onrender.com' } }
+        ]]
+      }
+    });
+  });
+  
+  bot.launch();
+  console.log('✅ Telegram Bot запущен');
+}
+
+// ===== ПОДКЛЮЧЕНИЕ К POSTGRESQL =====
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://gifts_db_i4ig_user:pDtsgu5KrXJnReT2zW2zFxzAWd0XF57L@dpg-d6fvlha4d50c73dfc1n0-a/gifts_db_i4ig',
+  ssl: {
+    rejectUnauthorized: false
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// ===== МИДЛВАРЫ =====
+app.use(compression());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Слишком много запросов, попробуйте позже'
 });
 
-// Middleware
 app.use(limiter);
 app.use(cors({
   origin: '*',
@@ -40,61 +94,59 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Статические файлы
-app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use(express.static('public', { maxAge: '1d' }));
+app.use('/uploads', express.static('uploads', { maxAge: '7d' }));
+app.use('/admin', express.static('admin'));
 
-// Создаем папки для загрузок
+// Создаем папки
 const fs = require('fs');
-const dirs = ['uploads', 'uploads/cases', 'uploads/items', 'uploads/avatars'];
+const dirs = ['uploads', 'uploads/cases', 'uploads/items', 'uploads/avatars', 'uploads/nft', 'uploads/screenshots'];
 dirs.forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// Настройка multer для загрузки файлов
+// Multer для загрузки файлов
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     const type = req.params.type || 'cases';
     cb(null, `uploads/${type}`);
   },
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `${uuidv4()}${ext}`);
   }
 });
+
 const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
+    if (extname && mimetype) return cb(null, true);
     cb(new Error('Только изображения разрешены'));
   }
 });
 
-// ===== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ =====
+// ===== ИНИЦИАЛИЗАЦИЯ БД =====
 async function initDB() {
   try {
-    // Проверяем подключение
     await pool.query('SELECT NOW()');
     console.log('✅ PostgreSQL подключен');
 
-    // Создаем таблицы
+    // Создаем все таблицы
     await pool.query(`
+      -- Пользователи
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         telegram_id BIGINT UNIQUE,
-        username VARCHAR(255) UNIQUE,
+        username VARCHAR(255),
         first_name VARCHAR(255),
         last_name VARCHAR(255),
         photo_url TEXT,
-        password VARCHAR(255),
-        email VARCHAR(255) UNIQUE,
-        avatar TEXT,
         balance DECIMAL DEFAULT 0,
+        gift_balance DECIMAL DEFAULT 0,
         total_deposited DECIMAL DEFAULT 0,
         total_withdrawn DECIMAL DEFAULT 0,
         total_games INTEGER DEFAULT 0,
@@ -106,40 +158,39 @@ async function initDB() {
         is_banned BOOLEAN DEFAULT FALSE,
         ban_reason TEXT,
         ip_address TEXT,
-        fingerprint TEXT UNIQUE,
+        fingerprint TEXT,
         device_info TEXT,
         referrer_id INTEGER REFERENCES users(id),
-        referrer_code TEXT UNIQUE,
+        referral_code TEXT UNIQUE,
         referral_count INTEGER DEFAULT 0,
         referral_earnings DECIMAL DEFAULT 0,
+        notifications_enabled BOOLEAN DEFAULT TRUE,
         last_login TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        settings JSONB DEFAULT '{"theme":"dark","notifications":true}'
+        settings JSONB DEFAULT '{"theme":"dark","language":"ru"}'
       );
 
-      CREATE TABLE IF NOT EXISTS sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        token TEXT UNIQUE,
-        ip_address TEXT,
-        user_agent TEXT,
-        expires_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      -- Индексы
+      CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_id);
+      CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance DESC);
 
+      -- Кейсы
       CREATE TABLE IF NOT EXISTS cases (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
         description TEXT,
         price DECIMAL NOT NULL,
+        gift_price DECIMAL,
         image_url TEXT,
         background_color VARCHAR(50) DEFAULT '#1a1a1a',
         is_active BOOLEAN DEFAULT TRUE,
         sort_order INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_by INTEGER REFERENCES users(id)
       );
 
+      -- Предметы кейсов (NFT)
       CREATE TABLE IF NOT EXISTS case_items (
         id SERIAL PRIMARY KEY,
         case_id INTEGER REFERENCES cases(id) ON DELETE CASCADE,
@@ -147,14 +198,31 @@ async function initDB() {
         description TEXT,
         image_url TEXT,
         value DECIMAL NOT NULL,
+        gift_value DECIMAL,
         probability DECIMAL NOT NULL,
         rarity VARCHAR(50) DEFAULT 'common',
         color VARCHAR(50) DEFAULT '#ffffff',
+        is_nft BOOLEAN DEFAULT FALSE,
+        nft_type VARCHAR(50),
         min_win DECIMAL,
         max_win DECIMAL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Инвентарь NFT
+      CREATE TABLE IF NOT EXISTS user_nft (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        item_id INTEGER REFERENCES case_items(id) ON DELETE CASCADE,
+        case_id INTEGER REFERENCES cases(id),
+        win_amount DECIMAL,
+        rarity VARCHAR(50),
+        is_equipped BOOLEAN DEFAULT FALSE,
+        is_sold BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Открытия кейсов
       CREATE TABLE IF NOT EXISTS case_openings (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -165,44 +233,60 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS games (
+      -- Покупки GiftDrop
+      CREATE TABLE IF NOT EXISTS gift_purchases (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) UNIQUE NOT NULL,
-        description TEXT,
-        image_url TEXT,
-        min_bet DECIMAL DEFAULT 1,
-        max_bet DECIMAL DEFAULT 1000,
-        is_active BOOLEAN DEFAULT TRUE,
-        sort_order INTEGER DEFAULT 0
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        username VARCHAR(255),
+        photo_url TEXT,
+        stars_amount INTEGER NOT NULL,
+        gift_amount INTEGER NOT NULL,
+        promo_code VARCHAR(50),
+        screenshot_url TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP
       );
 
+      -- Активные игроки
+      CREATE TABLE IF NOT EXISTS active_players (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        bet_amount DECIMAL,
+        current_multiplier DECIMAL DEFAULT 1.0,
+        status VARCHAR(50) DEFAULT 'waiting',
+        socket_id VARCHAR(255),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- История игр
       CREATE TABLE IF NOT EXISTS game_history (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        game_type VARCHAR(50) NOT NULL,
-        bet_amount DECIMAL NOT NULL,
-        win_amount DECIMAL NOT NULL,
+        game_type VARCHAR(50),
+        bet_amount DECIMAL,
+        win_amount DECIMAL,
         multiplier DECIMAL,
+        crashed_at DECIMAL,
         result JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS game_sessions (
+      -- Рефералы
+      CREATE TABLE IF NOT EXISTS referrals (
         id SERIAL PRIMARY KEY,
-        game_type VARCHAR(50) NOT NULL,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        session_id VARCHAR(255) UNIQUE,
-        bet_amount DECIMAL,
-        status VARCHAR(50) DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        referrer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        referred_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        reward_amount DECIMAL DEFAULT 25,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Транзакции
       CREATE TABLE IF NOT EXISTS transactions (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        amount DECIMAL NOT NULL,
-        type VARCHAR(50) NOT NULL,
+        amount DECIMAL,
+        type VARCHAR(50),
         method VARCHAR(50),
         status VARCHAR(50) DEFAULT 'completed',
         tx_hash TEXT UNIQUE,
@@ -210,123 +294,65 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS deposits (
+      -- Промокоды
+      CREATE TABLE IF NOT EXISTS promo_codes (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        amount DECIMAL NOT NULL,
-        method VARCHAR(50) NOT NULL,
-        stars_amount INTEGER,
-        gift_type VARCHAR(50),
-        status VARCHAR(50) DEFAULT 'pending',
-        tx_hash TEXT UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        completed_at TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS referrals (
-        id SERIAL PRIMARY KEY,
-        referrer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        referred_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-        ip_address TEXT,
-        fingerprint TEXT,
-        reward_amount DECIMAL DEFAULT 0,
-        claimed BOOLEAN DEFAULT FALSE,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        reward_amount INTEGER NOT NULL,
+        max_uses INTEGER DEFAULT 1,
+        uses_count INTEGER DEFAULT 0,
+        expires_at TIMESTAMP,
+        created_by INTEGER REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Админ логи
       CREATE TABLE IF NOT EXISTS admin_logs (
         id SERIAL PRIMARY KEY,
         admin_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        action VARCHAR(255) NOT NULL,
+        action VARCHAR(255),
         target_type VARCHAR(50),
         target_id INTEGER,
         details JSONB,
         ip_address TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-
-      CREATE TABLE IF NOT EXISTS banned_ips (
-        id SERIAL PRIMARY KEY,
-        ip_address VARCHAR(255) UNIQUE NOT NULL,
-        reason TEXT,
-        banned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
     `);
 
     console.log('✅ Таблицы созданы');
 
-    // Создаем тестовые игры если их нет
-    const gamesResult = await pool.query('SELECT COUNT(*) FROM games');
-    if (parseInt(gamesResult.rows[0].count) === 0) {
+    // Создаем тестовые кейсы
+    const casesCount = await pool.query('SELECT COUNT(*) FROM cases');
+    if (parseInt(casesCount.rows[0].count) === 0) {
       await pool.query(
-        `INSERT INTO games (name, description, image_url, min_bet, max_bet, sort_order) VALUES 
+        `INSERT INTO cases (name, description, price, gift_price, image_url, sort_order) VALUES 
          ($1, $2, $3, $4, $5, $6),
          ($7, $8, $9, $10, $11, $12),
-         ($13, $14, $15, $16, $17, $18)`,
+         ($13, $14, $15, $16, $17, $18),
+         ($19, $20, $21, $22, $23, $24)`,
         [
-          'Кейсы', 'Открывай кейсы и выигрывай', '/games/cases.png', 1, 10000, 1,
-          'Ракетка', 'Лови момент и забирай', '/games/rocket.png', 1, 1000, 2,
-          'Rolls', 'Угадай цвет и умножай', '/games/rolls.png', 1, 500, 3
-        ]
-      );
-    }
-
-    // Создаем тестовые кейсы если их нет
-    const casesResult = await pool.query('SELECT COUNT(*) FROM cases');
-    if (parseInt(casesResult.rows[0].count) === 0) {
-      await pool.query(
-        `INSERT INTO cases (name, description, price, image_url, sort_order) VALUES 
-         ($1, $2, $3, $4, $5),
-         ($6, $7, $8, $9, $10),
-         ($11, $12, $13, $14, $15),
-         ($16, $17, $18, $19, $20)`,
-        [
-          'Обычный кейс', 'Шанс на выигрыш до 100 ⭐', 10, '/cases/common.png', 1,
-          'Редкий кейс', 'Шанс на выигрыш до 500 ⭐', 50, '/cases/rare.png', 2,
-          'Эпический кейс', 'Шанс на выигрыш до 2000 ⭐', 200, '/cases/epic.png', 3,
-          'Легендарный кейс', 'Шанс на выигрыш до 10000 ⭐', 1000, '/cases/legendary.png', 4
+          'Обычный кейс', 'Обычные предметы', 10, 5, '/cases/common.png', 1,
+          'Редкий кейс', 'Редкие предметы', 50, 25, '/cases/rare.png', 2,
+          'Эпический кейс', 'Эпические предметы', 200, 100, '/cases/epic.png', 3,
+          'Легендарный кейс', 'Легендарные предметы', 1000, 500, '/cases/legendary.png', 4
         ]
       );
 
-      // Добавляем предметы для кейсов
+      // Добавляем предметы
       const cases = await pool.query('SELECT id FROM cases ORDER BY id');
       
-      // Для обычного кейса
-      await pool.query(
-        `INSERT INTO case_items (case_id, name, value, probability, rarity) VALUES 
-         ($1, $2, $3, $4, $5),
-         ($1, $6, $7, $8, $9),
-         ($1, $10, $11, $12, $13)`,
-        [cases.rows[0].id, 'Обычный предмет', 5, 50, 'common', 'Редкий предмет', 20, 30, 'rare', 'Эпический предмет', 50, 20, 'epic']
-      );
-
-      // Для редкого кейса
-      await pool.query(
-        `INSERT INTO case_items (case_id, name, value, probability, rarity) VALUES 
-         ($1, $2, $3, $4, $5),
-         ($1, $6, $7, $8, $9),
-         ($1, $10, $11, $12, $13)`,
-        [cases.rows[1].id, 'Редкий предмет', 30, 50, 'rare', 'Эпический предмет', 100, 30, 'epic', 'Легендарный предмет', 300, 20, 'legendary']
-      );
-
-      // Для эпического кейса
-      await pool.query(
-        `INSERT INTO case_items (case_id, name, value, probability, rarity) VALUES 
-         ($1, $2, $3, $4, $5),
-         ($1, $6, $7, $8, $9),
-         ($1, $10, $11, $12, $13)`,
-        [cases.rows[2].id, 'Эпический предмет', 150, 50, 'epic', 'Легендарный предмет', 500, 30, 'legendary', 'Мифический предмет', 1500, 20, 'mythic']
-      );
-
-      // Для легендарного кейса
-      await pool.query(
-        `INSERT INTO case_items (case_id, name, value, probability, rarity) VALUES 
-         ($1, $2, $3, $4, $5),
-         ($1, $6, $7, $8, $9),
-         ($1, $10, $11, $12, $13)`,
-        [cases.rows[3].id, 'Легендарный предмет', 800, 50, 'legendary', 'Мифический предмет', 2500, 30, 'mythic', 'Божественный предмет', 8000, 20, 'divine']
-      );
+      for (let i = 0; i < cases.rows.length; i++) {
+        const caseId = cases.rows[i].id;
+        await pool.query(
+          `INSERT INTO case_items (case_id, name, value, gift_value, probability, rarity, is_nft) VALUES 
+           ($1, $2, $3, $4, $5, $6, $7),
+           ($1, $8, $9, $10, $11, $12, $13),
+           ($1, $14, $15, $16, $17, $18, $19)`,
+          [caseId, 'Обычный предмет', 5, 3, 50, 'common', false,
+           'Редкий предмет', 20, 10, 30, 'rare', true,
+           'Эпический предмет', 50, 25, 20, 'epic', true]
+        );
+      }
     }
 
     // Создаем админов
@@ -337,18 +363,27 @@ async function initDB() {
 
     for (const admin of admins) {
       const existing = await pool.query('SELECT * FROM users WHERE username = $1', [admin.username]);
-      
       if (existing.rows.length === 0) {
         const hash = await bcrypt.hash(admin.password, 10);
-        const referrerCode = 'ADMIN' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        
         await pool.query(
-          `INSERT INTO users (username, password, balance, is_admin, is_premium, referrer_code, settings) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [admin.username, hash, 1000000, true, true, referrerCode, JSON.stringify({theme: 'dark', notifications: true})]
+          `INSERT INTO users (username, password, balance, gift_balance, is_admin, is_premium, referral_code, notifications_enabled) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [admin.username, hash, 1000000, 10000, true, true, `ADMIN_${admin.username}`, true]
         );
         console.log(`✅ Админ ${admin.username} создан`);
       }
+    }
+
+    // Создаем промокоды
+    const promoCount = await pool.query('SELECT COUNT(*) FROM promo_codes');
+    if (parseInt(promoCount.rows[0].count) === 0) {
+      await pool.query(
+        `INSERT INTO promo_codes (code, reward_amount, max_uses) VALUES 
+         ($1, $2, $3),
+         ($4, $5, $6),
+         ($7, $8, $9)`,
+        ['WELCOME', 50, 1000, 'GIFT2025', 100, 500, 'STARS', 25, 1000]
+      );
     }
 
   } catch (error) {
@@ -356,384 +391,408 @@ async function initDB() {
   }
 }
 
-// ===== МИДЛВАРЫ =====
-
-// Получение или создание пользователя
-async function getOrCreateUser(req, res, next) {
-  const { telegram_id, username, first_name, last_name, photo_url } = req.body;
-  const fingerprint = req.headers['x-fingerprint'] || req.query.fingerprint || 'unknown';
-  const ip = req.ip || req.connection.remoteAddress;
-  const userAgent = req.headers['user-agent'];
-  
+// ===== ФУНКЦИЯ СОХРАНЕНИЯ РЕФЕРАЛА =====
+async function saveReferral(userId, referrerId) {
   try {
-    let user;
+    const existing = await pool.query(
+      'SELECT * FROM referrals WHERE referred_id = $1',
+      [userId]
+    );
     
-    // Ищем по telegram_id если есть
-    if (telegram_id) {
-      const result = await pool.query('SELECT * FROM users WHERE telegram_id = $1', [telegram_id]);
-      user = result.rows[0];
-    }
-    
-    // Ищем по fingerprint если нет telegram_id
-    if (!user) {
-      const result = await pool.query('SELECT * FROM users WHERE fingerprint = $1', [fingerprint]);
-      user = result.rows[0];
-    }
-    
-    // Если не нашли, создаем нового
-    if (!user) {
-      const newUsername = username || 'user_' + Math.random().toString(36).substring(2, 10);
-      const referrerCode = 'GB' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      
-      const newUserResult = await pool.query(
-        `INSERT INTO users (telegram_id, username, first_name, last_name, photo_url, fingerprint, ip_address, device_info, referrer_code, settings, balance) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-        [telegram_id, newUsername, first_name, last_name, photo_url, fingerprint, ip, userAgent, referrerCode, JSON.stringify({theme: 'dark', notifications: true}), 0]
+    if (existing.rows.length === 0 && userId !== parseInt(referrerId)) {
+      await pool.query(
+        `INSERT INTO referrals (referrer_id, referred_id, reward_amount) 
+         VALUES ($1, $2, $3)`,
+        [referrerId, userId, 25]
       );
       
-      user = newUserResult.rows[0];
-      console.log(`✅ Новый пользователь создан: ${newUsername}`);
-    } else {
-      // Обновляем данные Telegram если изменились
-      if (telegram_id && (!user.telegram_id || user.telegram_id !== telegram_id)) {
-        await pool.query(
-          'UPDATE users SET telegram_id = $1, first_name = $2, last_name = $3, photo_url = $4 WHERE id = $5',
-          [telegram_id, first_name, last_name, photo_url, user.id]
+      await pool.query(
+        `UPDATE users SET balance = balance + 25, referral_count = referral_count + 1, referral_earnings = referral_earnings + 25 
+         WHERE id = $1`,
+        [referrerId]
+      );
+      
+      await pool.query(
+        `UPDATE users SET balance = balance + 25 WHERE id = $1`,
+        [userId]
+      );
+      
+      console.log(`✅ Реферал активирован: ${referrerId} -> ${userId}`);
+    }
+  } catch (error) {
+    console.error('Ошибка сохранения реферала:', error);
+  }
+}
+
+// ===== WEBSOCKET =====
+io.on('connection', (socket) => {
+  console.log('🔌 Новое подключение:', socket.id);
+  
+  socket.on('join_game', async (data) => {
+    const { userId, betAmount } = data;
+    
+    try {
+      await pool.query(
+        `INSERT INTO active_players (user_id, bet_amount, socket_id, status) 
+         VALUES ($1, $2, $3, 'waiting')
+         ON CONFLICT (user_id) DO UPDATE 
+         SET bet_amount = $2, socket_id = $3, status = 'waiting', updated_at = CURRENT_TIMESTAMP`,
+        [userId, betAmount, socket.id]
+      );
+      
+      broadcastPlayers();
+    } catch (error) {
+      console.error('Ошибка join_game:', error);
+    }
+  });
+  
+  socket.on('start_game', async (data) => {
+    const { userId, betAmount } = data;
+    
+    try {
+      await pool.query(
+        `UPDATE active_players 
+         SET status = 'playing', bet_amount = $2, updated_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $1`,
+        [userId, betAmount]
+      );
+      
+      broadcastPlayers();
+    } catch (error) {
+      console.error('Ошибка start_game:', error);
+    }
+  });
+  
+  socket.on('disconnect', async () => {
+    try {
+      await pool.query(
+        `DELETE FROM active_players WHERE socket_id = $1`,
+        [socket.id]
+      );
+      
+      broadcastPlayers();
+    } catch (error) {
+      console.error('Ошибка disconnect:', error);
+    }
+  });
+});
+
+async function broadcastPlayers() {
+  try {
+    const players = await pool.query(`
+      SELECT 
+        ap.*,
+        u.username,
+        u.first_name,
+        u.photo_url
+      FROM active_players ap
+      JOIN users u ON u.id = ap.user_id
+      ORDER BY ap.updated_at DESC
+    `);
+    
+    io.emit('players_update', players.rows);
+  } catch (error) {
+    console.error('Ошибка broadcastPlayers:', error);
+  }
+}
+
+// ===== API ПОЛЬЗОВАТЕЛИ =====
+
+// Получение/создание пользователя
+app.post('/api/user', async (req, res) => {
+  const { telegram_id, username, first_name, last_name, photo_url } = req.body;
+  const ip = req.ip;
+  const fingerprint = req.headers['x-fingerprint'] || `fp_${Date.now()}`;
+  
+  try {
+    let user = await pool.query('SELECT * FROM users WHERE telegram_id = $1', [telegram_id]);
+    
+    if (user.rows.length === 0) {
+      const referralCode = `ref_${telegram_id || Math.floor(Math.random() * 1000000)}`;
+      const result = await pool.query(
+        `INSERT INTO users (telegram_id, username, first_name, last_name, photo_url, ip_address, fingerprint, referral_code, balance, gift_balance, notifications_enabled) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [telegram_id, username, first_name, last_name, photo_url, ip, fingerprint, referralCode, 0, 0, true]
+      );
+      user = result.rows[0];
+      
+      // Отправляем приветственное сообщение в бот
+      if (bot && telegram_id) {
+        await bot.telegram.sendMessage(telegram_id, 
+          `🎁 Добро пожаловать в GiftDrop, ${first_name || username}!\n\nВы успешно авторизовались в приложении. Теперь вы будете получать уведомления о новых кейсах и выигрышах.`,
+          { parse_mode: 'HTML' }
         );
       }
-      
-      // Обновляем last_seen
+    } else {
+      user = user.rows[0];
       await pool.query(
         'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1',
         [user.id]
       );
     }
     
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Ошибка в getOrCreateUser:', error);
-    next();
-  }
-}
-
-// ===== API =====
-
-// Получение текущего пользователя
-app.post('/api/user', getOrCreateUser, async (req, res) => {
-  try {
-    res.json({
-      id: req.user.id,
-      telegram_id: req.user.telegram_id,
-      username: req.user.username,
-      first_name: req.user.first_name,
-      last_name: req.user.last_name,
-      photo_url: req.user.photo_url,
-      balance: parseFloat(req.user.balance),
-      is_premium: req.user.is_premium,
-      is_admin: req.user.is_admin,
-      settings: req.user.settings
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
-});
-
-// Получение статистики пользователя
-app.get('/api/user/stats', async (req, res) => {
-  const { user_id } = req.query;
-  
-  try {
-    const stats = await pool.query(`
+    // Получаем NFT инвентарь
+    const nftInventory = await pool.query(`
       SELECT 
-        total_games,
-        total_wins,
-        win_rate,
-        referral_count,
-        created_at
-      FROM users WHERE id = $1
-    `, [user_id]);
+        un.*,
+        ci.name,
+        ci.image_url,
+        ci.rarity,
+        ci.color,
+        ci.value,
+        ci.gift_value
+      FROM user_nft un
+      JOIN case_items ci ON ci.id = un.item_id
+      WHERE un.user_id = $1 AND un.is_sold = false
+      ORDER BY un.created_at DESC
+    `, [user.id]);
     
-    res.json(stats.rows[0] || { total_games: 0, total_wins: 0, win_rate: 0 });
+    res.json({
+      id: user.id,
+      telegram_id: user.telegram_id,
+      username: user.username,
+      first_name: user.first_name,
+      photo_url: user.photo_url,
+      balance: parseFloat(user.balance),
+      gift_balance: parseFloat(user.gift_balance),
+      is_admin: user.is_admin,
+      is_premium: user.is_premium,
+      referral_code: user.referral_code,
+      referral_count: user.referral_count,
+      referral_earnings: parseFloat(user.referral_earnings),
+      total_games: user.total_games,
+      total_wins: user.total_wins,
+      win_rate: parseFloat(user.win_rate),
+      notifications_enabled: user.notifications_enabled,
+      nft_inventory: nftInventory.rows,
+      settings: user.settings
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка получения пользователя:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// ===== REAL-TIME СТАТИСТИКА =====
+// ===== API ПОКУПКИ GIFT DROP =====
 
-// Получение количества игроков в играх
-app.get('/api/games/players', async (req, res) => {
-  try {
-    // Подсчитываем активные сессии за последние 5 минут
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    
-    const casesPlayers = await pool.query(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM game_sessions 
-      WHERE game_type = 'cases' AND updated_at > $1
-    `, [fiveMinAgo]);
-    
-    const rocketPlayers = await pool.query(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM game_sessions 
-      WHERE game_type = 'rocket' AND updated_at > $1
-    `, [fiveMinAgo]);
-    
-    const rollsPlayers = await pool.query(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM game_sessions 
-      WHERE game_type = 'rolls' AND updated_at > $1
-    `, [fiveMinAgo]);
-    
-    res.json({
-      cases: parseInt(casesPlayers.rows[0].count) || 127,
-      rocket: parseInt(rocketPlayers.rows[0].count) || 234,
-      rolls: parseInt(rollsPlayers.rows[0].count) || 89
-    });
-  } catch (error) {
-    console.error(error);
-    // Возвращаем тестовые данные при ошибке
-    res.json({
-      cases: 127,
-      rocket: 234,
-      rolls: 89
-    });
-  }
-});
-
-// Обновление игровой сессии
-app.post('/api/games/session', async (req, res) => {
-  const { user_id, game_type, session_id } = req.body;
+// Создание покупки
+app.post('/api/gift/purchase', async (req, res) => {
+  const { user_id, stars_amount, gift_amount, promo_code } = req.body;
   
   try {
-    // Проверяем существующую сессию
-    const existing = await pool.query(
-      'SELECT * FROM game_sessions WHERE user_id = $1 AND game_type = $2',
-      [user_id, game_type]
+    const user = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    const result = await pool.query(
+      `INSERT INTO gift_purchases (user_id, username, photo_url, stars_amount, gift_amount, promo_code, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING id`,
+      [user_id, user.rows[0].username, user.rows[0].photo_url, stars_amount, gift_amount, promo_code]
     );
     
-    if (existing.rows.length > 0) {
-      // Обновляем существующую
-      await pool.query(
-        'UPDATE game_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-        [existing.rows[0].id]
-      );
-    } else {
-      // Создаем новую
-      await pool.query(
-        'INSERT INTO game_sessions (user_id, game_type, session_id) VALUES ($1, $2, $3)',
-        [user_id, game_type, session_id || uuidv4()]
-      );
+    res.json({
+      success: true,
+      purchase_id: result.rows[0].id,
+      message: 'Заявка на покупку создана'
+    });
+  } catch (error) {
+    console.error('Ошибка создания покупки:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Загрузка скриншота
+app.post('/api/gift/upload-screenshot/:purchaseId', upload.single('screenshot'), async (req, res) => {
+  const { purchaseId } = req.params;
+  const screenshotUrl = req.file ? `/uploads/screenshots/${req.file.filename}` : null;
+  
+  try {
+    await pool.query(
+      `UPDATE gift_purchases SET screenshot_url = $1 WHERE id = $2`,
+      [screenshotUrl, purchaseId]
+    );
+    
+    res.json({ success: true, screenshot_url: screenshotUrl });
+  } catch (error) {
+    console.error('Ошибка загрузки скриншота:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Подтверждение покупки (админка)
+app.post('/api/admin/gift/confirm/:purchaseId', async (req, res) => {
+  const { purchaseId } = req.params;
+  
+  const token = req.cookies.admin_token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const admin = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [decoded.id]);
+    if (!admin.rows[0]) return res.status(403).json({ error: 'Forbidden' });
+    
+    const purchase = await pool.query('SELECT * FROM gift_purchases WHERE id = $1', [purchaseId]);
+    if (purchase.rows.length === 0) {
+      return res.status(404).json({ error: 'Покупка не найдена' });
+    }
+    
+    const p = purchase.rows[0];
+    
+    // Начисляем GiftDrop пользователю
+    await pool.query(
+      `UPDATE users SET gift_balance = gift_balance + $1 WHERE id = $2`,
+      [p.gift_amount, p.user_id]
+    );
+    
+    await pool.query(
+      `UPDATE gift_purchases SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [purchaseId]
+    );
+    
+    await pool.query(
+      `INSERT INTO transactions (user_id, amount, type, method, description) VALUES ($1, $2, 'gift_purchase', 'stars', $3)`,
+      [p.user_id, p.gift_amount, `Покупка GiftDrop за ${p.stars_amount} ⭐`]
+    );
+    
+    // Отправляем уведомление в Telegram
+    if (bot) {
+      const user = await pool.query('SELECT * FROM users WHERE id = $1', [p.user_id]);
+      if (user.rows[0]?.telegram_id && user.rows[0].notifications_enabled) {
+        await bot.telegram.sendMessage(user.rows[0].telegram_id,
+          `✅ Ваш платёж подтверждён!\n\n➕ Зачислено: ${p.gift_amount} 🎁\n💰 Новый баланс: ${parseFloat(user.rows[0].gift_balance) + p.gift_amount} 🎁`
+        );
+      }
     }
     
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
-    res.json({ success: true }); // Не блокируем игру при ошибке
+    console.error('Ошибка подтверждения покупки:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// ===== ТОП ИГРОКОВ =====
-app.get('/api/leaderboard', async (req, res) => {
+// Отклонение покупки
+app.post('/api/admin/gift/reject/:purchaseId', async (req, res) => {
+  const { purchaseId } = req.params;
+  
+  const token = req.cookies.admin_token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  
   try {
-    // Топ по балансу - исключаем админов
-    const byBalance = await pool.query(`
-      SELECT username, balance, total_games, total_wins 
-      FROM users 
-      WHERE is_admin = false AND is_banned = false
-      ORDER BY balance DESC 
-      LIMIT 10
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const admin = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [decoded.id]);
+    if (!admin.rows[0]) return res.status(403).json({ error: 'Forbidden' });
+    
+    await pool.query(
+      `UPDATE gift_purchases SET status = 'rejected' WHERE id = $1`,
+      [purchaseId]
+    );
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Ошибка отклонения покупки:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Получение всех покупок (админка)
+app.get('/api/admin/gift/purchases', async (req, res) => {
+  const token = req.cookies.admin_token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const admin = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [decoded.id]);
+    if (!admin.rows[0]) return res.status(403).json({ error: 'Forbidden' });
+    
+    const purchases = await pool.query(`
+      SELECT * FROM gift_purchases 
+      ORDER BY created_at DESC 
+      LIMIT 100
     `);
     
-    res.json({ by_balance: byBalance.rows });
+    res.json(purchases.rows);
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка получения покупок:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// ===== КЕЙСЫ =====
-app.get('/api/cases', async (req, res) => {
+// ===== API ПРОМОКОДЫ =====
+
+// Применение промокода
+app.post('/api/promo/apply', async (req, res) => {
+  const { user_id, code } = req.body;
+  
   try {
-    const casesResult = await pool.query(
-      'SELECT * FROM cases WHERE is_active = true ORDER BY sort_order'
+    const promo = await pool.query(
+      'SELECT * FROM promo_codes WHERE code = $1 AND (expires_at IS NULL OR expires_at > NOW()) AND uses_count < max_uses',
+      [code]
     );
     
-    const cases = [];
-    for (const c of casesResult.rows) {
-      const itemsResult = await pool.query(
-        'SELECT COUNT(*) as count FROM case_items WHERE case_id = $1',
-        [c.id]
-      );
-      
-      cases.push({
-        id: c.id,
-        name: c.name,
-        description: c.description,
-        price: parseFloat(c.price),
-        image_url: c.image_url,
-        background_color: c.background_color,
-        items_count: parseInt(itemsResult.rows[0].count)
-      });
+    if (promo.rows.length === 0) {
+      return res.status(404).json({ error: 'Промокод недействителен' });
     }
     
-    res.json({ cases });
+    const p = promo.rows[0];
+    
+    await pool.query(
+      `UPDATE users SET gift_balance = gift_balance + $1 WHERE id = $2`,
+      [p.reward_amount, user_id]
+    );
+    
+    await pool.query(
+      `UPDATE promo_codes SET uses_count = uses_count + 1 WHERE id = $1`,
+      [p.id]
+    );
+    
+    res.json({ success: true, reward: p.reward_amount });
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка применения промокода:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// Открытие кейса
-app.post('/api/cases/:id/open', async (req, res) => {
-  const case_id = req.params.id;
-  const { user_id } = req.body;
-  
-  if (!user_id) {
-    return res.status(400).json({ error: 'User ID required' });
-  }
-  
+// ===== API СТАТИСТИКА =====
+
+app.get('/api/stats', async (req, res) => {
   try {
-    // Получаем пользователя
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
-    const user = userResult.rows[0];
-    
-    // Получаем кейс
-    const caseResult = await pool.query(
-      'SELECT * FROM cases WHERE id = $1 AND is_active = true',
-      [case_id]
-    );
-    const caseData = caseResult.rows[0];
-    
-    if (!caseData) {
-      return res.status(404).json({ error: 'Кейс не найден' });
-    }
-    
-    // Получаем предметы
-    const itemsResult = await pool.query(
-      'SELECT * FROM case_items WHERE case_id = $1',
-      [case_id]
-    );
-    const items = itemsResult.rows;
-    
-    if (items.length === 0) {
-      return res.status(400).json({ error: 'Кейс пуст' });
-    }
-    
-    // Проверяем баланс
-    if (parseFloat(user.balance) < parseFloat(caseData.price)) {
-      return res.status(400).json({ error: 'Недостаточно средств' });
-    }
-    
-    // Выбираем предмет по вероятности
-    const totalProb = items.reduce((sum, item) => sum + parseFloat(item.probability), 0);
-    let rand = Math.random() * totalProb;
-    let selectedItem = items[0];
-    let cumulative = 0;
-    
-    for (const item of items) {
-      cumulative += parseFloat(item.probability);
-      if (rand <= cumulative) {
-        selectedItem = item;
-        break;
-      }
-    }
-    
-    // Определяем выигрыш
-    let winAmount = parseFloat(selectedItem.value);
-    
-    // Обновляем баланс
-    await pool.query(
-      'UPDATE users SET balance = balance - $1, total_games = total_games + 1 WHERE id = $2',
-      [caseData.price, user_id]
-    );
-    
-    await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
-      [winAmount, user_id]
-    );
-    
-    if (winAmount > caseData.price) {
-      await pool.query(
-        'UPDATE users SET total_wins = total_wins + 1 WHERE id = $1',
-        [user_id]
-      );
-    }
-    
-    // Обновляем win_rate
-    await pool.query(`
-      UPDATE users 
-      SET win_rate = (total_wins::float / NULLIF(total_games, 0)) * 100 
-      WHERE id = $1
-    `, [user_id]);
-    
-    // Записываем открытие
-    await pool.query(
-      `INSERT INTO case_openings (user_id, case_id, item_id, win_amount) 
-       VALUES ($1, $2, $3, $4)`,
-      [user_id, case_id, selectedItem.id, winAmount]
-    );
-    
-    // Обновляем игровую сессию
-    await pool.query(
-      `INSERT INTO game_sessions (user_id, game_type, session_id, updated_at) 
-       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, game_type) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
-      [user_id, 'cases', uuidv4()]
-    );
-    
-    // Получаем обновленного пользователя
-    const updatedUserResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
-    const updatedUser = updatedUserResult.rows[0];
+    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+    const activePlayers = await pool.query('SELECT COUNT(*) FROM active_players');
+    const totalPurchases = await pool.query('SELECT COUNT(*) FROM gift_purchases WHERE status = $1', ['completed']);
+    const totalGift = await pool.query('SELECT COALESCE(SUM(gift_amount), 0) FROM gift_purchases WHERE status = $1', ['completed']);
     
     res.json({
-      success: true,
-      item: {
-        id: selectedItem.id,
-        name: selectedItem.name,
-        description: selectedItem.description,
-        image_url: selectedItem.image_url,
-        value: winAmount,
-        rarity: selectedItem.rarity,
-        color: selectedItem.color
-      },
-      win_amount: winAmount,
-      new_balance: parseFloat(updatedUser.balance)
+      total_users: parseInt(usersCount.rows[0].count),
+      online: parseInt(activePlayers.rows[0].count),
+      total_purchases: parseInt(totalPurchases.rows[0].count),
+      total_gift: parseFloat(totalGift.rows[0].sum)
     });
-    
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка получения статистики:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// Последние открытия
-app.get('/api/recent-openings', async (req, res) => {
+// ===== API АКТИВНЫЕ ИГРОКИ =====
+
+app.get('/api/players', async (req, res) => {
   try {
-    const result = await pool.query(`
+    const players = await pool.query(`
       SELECT 
+        ap.*,
         u.username,
-        c.name as case_name,
-        ci.name as item_name,
-        ci.rarity,
-        ci.color,
-        co.win_amount,
-        co.created_at
-      FROM case_openings co
-      JOIN users u ON u.id = co.user_id
-      JOIN cases c ON c.id = co.case_id
-      JOIN case_items ci ON ci.id = co.item_id
-      WHERE co.is_test = false
-      ORDER BY co.created_at DESC
-      LIMIT 20
+        u.first_name,
+        u.photo_url
+      FROM active_players ap
+      JOIN users u ON u.id = ap.user_id
+      ORDER BY ap.updated_at DESC
     `);
     
-    res.json({ openings: result.rows });
+    res.json(players.rows);
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка получения игроков:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
@@ -773,7 +832,7 @@ app.post('/api/admin/login', async (req, res) => {
     res.json({ success: true });
     
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка логина:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
@@ -807,28 +866,26 @@ app.get('/api/admin/check', async (req, res) => {
   }
 });
 
-// Получение статистики
-app.get('/api/admin/stats', async (req, res) => {
+// Получение всех пользователей (админка)
+app.get('/api/admin/users', async (req, res) => {
+  const token = req.cookies.admin_token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  
   try {
-    const usersCount = await pool.query('SELECT COUNT(*) FROM users WHERE is_admin = false');
-    const activeToday = await pool.query(`
-      SELECT COUNT(*) FROM users 
-      WHERE last_seen > NOW() - INTERVAL '1 day' AND is_admin = false
-    `);
-    const totalBalance = await pool.query('SELECT COALESCE(SUM(balance), 0) FROM users WHERE is_admin = false');
-    const openingsToday = await pool.query(`
-      SELECT COUNT(*) FROM case_openings 
-      WHERE created_at > NOW() - INTERVAL '1 day'
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const admin = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [decoded.id]);
+    if (!admin.rows[0]) return res.status(403).json({ error: 'Forbidden' });
+    
+    const users = await pool.query(`
+      SELECT id, username, first_name, photo_url, balance, gift_balance, 
+             total_games, total_wins, is_premium, is_admin, is_banned,
+             referral_count, created_at, last_seen, notifications_enabled
+      FROM users ORDER BY id DESC LIMIT 100
     `);
     
-    res.json({
-      total_users: parseInt(usersCount.rows[0].count),
-      active_today: parseInt(activeToday.rows[0].count),
-      total_balance: parseFloat(totalBalance.rows[0].sum),
-      openings_today: parseInt(openingsToday.rows[0].count)
-    });
+    res.json(users.rows);
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка получения пользователей:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
@@ -836,11 +893,20 @@ app.get('/api/admin/stats', async (req, res) => {
 // ===== ЗАПУСК =====
 
 initDB().then(() => {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`🌐 http://localhost:${PORT}`);
     console.log(`👑 Админка: http://localhost:${PORT}/admin`);
-    console.log(`   Логин: Aries / cheesecakes`);
-    console.log(`   Логин: Aneba / admin`);
+    console.log(`🔌 WebSocket сервер запущен`);
   });
+});
+
+// Graceful shutdown
+process.once('SIGINT', () => {
+  if (bot) bot.stop('SIGINT');
+  process.exit();
+});
+process.once('SIGTERM', () => {
+  if (bot) bot.stop('SIGTERM');
+  process.exit();
 });
